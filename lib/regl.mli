@@ -1,16 +1,8 @@
 open Js_of_ocaml
 
-type time_interval =
-  | AnimationFrame
-  | Millisecond of float
-
-type regl_config = {
-  time_interval : time_interval;
-}
-
-type texture_mag_option =
-  | MagNearest
-  | MagLinear
+type time_interval = AnimationFrame | Millisecond of float
+type regl_config = { time_interval : time_interval }
+type texture_mag_option = MagNearest | MagLinear
 
 type texture_min_option =
   | MinNearest
@@ -33,11 +25,7 @@ type regl_start_config = {
   builtin_programs : string list option;
 }
 
-type texture = {
-  name : string;
-  width : int;
-  height : int;
-}
+type texture = { name : string; width : int; height : int }
 
 type regl_recv_msg =
   | REGLTextureLoaded of texture

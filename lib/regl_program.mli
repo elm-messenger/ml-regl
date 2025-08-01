@@ -16,11 +16,9 @@ type regl_program = {
 }
 
 val encode_program : regl_program -> Js.Unsafe.any
-
 val make_effect_program : string -> regl_program -> regl_program
-
 val make_effect_simple : string -> (string * prog_value) list -> regl_program
-
 val make_compositor_program : string -> string -> regl_program -> regl_program
 
-val make_compositor_simple : string -> (string * prog_value) list -> regl_program
+val make_compositor_simple :
+  string -> (string * prog_value) list -> regl_program

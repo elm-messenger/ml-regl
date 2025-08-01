@@ -1,19 +1,12 @@
 open Js_of_ocaml
 
 type program_call = (string * Js.Unsafe.any) list
-
 type regl_effect = program_call
+type camera = { x : float; y : float; zoom : float; rotation : float }
 
-type camera = {
-  x : float;
-  y : float;
-  zoom : float;
-  rotation : float;
-}
-
-type renderable = 
+type renderable =
   | AtomicRenderable of program_call
-  | GroupRenderable of regl_effect list * renderable list  
+  | GroupRenderable of regl_effect list * renderable list
   | GroupRenderableWithCamera of camera * regl_effect list * renderable list
 
 let rec render = function
@@ -21,27 +14,39 @@ let rec render = function
       let pairs = List.map (fun (k, v) -> (k, v)) value in
       Js.Unsafe.obj (Array.of_list pairs)
   | GroupRenderable (effects, renderables) ->
-      let effects_array = Array.of_list (List.map (fun e -> Js.Unsafe.obj (Array.of_list e)) effects) in
+      let effects_array =
+        Array.of_list
+          (List.map (fun e -> Js.Unsafe.obj (Array.of_list e)) effects)
+      in
       let renderables_array = Array.of_list (List.map render renderables) in
-      Js.Unsafe.obj [|
-        ("e", Js.Unsafe.inject (Js.array effects_array));
-        ("c", Js.Unsafe.inject (Js.array renderables_array));
-        ("_c", Js.Unsafe.inject (Js.number_of_float 2.0))
-      |]
+      Js.Unsafe.obj
+        [|
+          ("e", Js.Unsafe.inject (Js.array effects_array));
+          ("c", Js.Unsafe.inject (Js.array renderables_array));
+          ("_c", Js.Unsafe.inject (Js.number_of_float 2.0));
+        |]
   | GroupRenderableWithCamera (camera, effects, renderables) ->
-      let effects_array = Array.of_list (List.map (fun e -> Js.Unsafe.obj (Array.of_list e)) effects) in
+      let effects_array =
+        Array.of_list
+          (List.map (fun e -> Js.Unsafe.obj (Array.of_list e)) effects)
+      in
       let renderables_array = Array.of_list (List.map render renderables) in
-      let camera_array = [| camera.x; camera.y; camera.zoom; camera.rotation |] in
-      Js.Unsafe.obj [|
-        ("e", Js.Unsafe.inject (Js.array effects_array));
-        ("c", Js.Unsafe.inject (Js.array renderables_array));
-        ("_c", Js.Unsafe.inject (Js.number_of_float 2.0));
-        ("_sc", Js.Unsafe.inject (Js.array (Array.map Js.number_of_float camera_array)))
-      |]
+      let camera_array =
+        [| camera.x; camera.y; camera.zoom; camera.rotation |]
+      in
+      Js.Unsafe.obj
+        [|
+          ("e", Js.Unsafe.inject (Js.array effects_array));
+          ("c", Js.Unsafe.inject (Js.array renderables_array));
+          ("_c", Js.Unsafe.inject (Js.number_of_float 2.0));
+          ( "_sc",
+            Js.Unsafe.inject
+              (Js.array (Array.map Js.number_of_float camera_array)) );
+        |]
 
 let group effects renderables = GroupRenderable (effects, renderables)
 
-let group_with_camera camera effects renderables = 
+let group_with_camera camera effects renderables =
   GroupRenderableWithCamera (camera, effects, renderables)
 
 let update_list_foldr key new_val list =
@@ -70,4 +75,4 @@ let gen_prog pc = AtomicRenderable pc
 
 let to_rgba_list color =
   let rgba = Color.to_rgba color in
-  [rgba.red; rgba.green; rgba.blue; rgba.alpha]
+  [ rgba.red; rgba.green; rgba.blue; rgba.alpha ]
