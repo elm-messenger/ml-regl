@@ -1,6 +1,6 @@
 (lang dune 3.19)
 
-(name ml-regl)
+(name regl)
 
 (generate_opam_files true)
 
@@ -16,7 +16,7 @@
 (documentation https://url/to/documentation)
 
 (package
- (name ml-regl)
+ (name regl)
  (synopsis "A short synopsis")
  (description "A longer description")
  (depends ocaml)

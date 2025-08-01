@@ -38,3 +38,4 @@ val create_regl_program : string -> Regl_program.regl_program -> Js.Unsafe.any
 val config_regl : regl_config -> Js.Unsafe.any
 val load_msdf_font : string -> string -> string -> Js.Unsafe.any
 val decode_recv_msg : Js.Unsafe.any -> regl_recv_msg option
+val init_regl : unit -> unit

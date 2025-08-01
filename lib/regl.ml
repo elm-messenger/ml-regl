@@ -167,7 +167,7 @@ let decode_recv_msg v =
   | _ -> None
 
 (* Export functions for js_of_ocaml *)
-let () =
+let init_regl () =
   Js.export "REGL"
     (Js.Unsafe.obj
        [|
