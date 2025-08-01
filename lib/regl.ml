@@ -49,9 +49,7 @@ let encode_config config =
     | AnimationFrame -> -1.0
     | Millisecond ms -> ms
   in
-  (object%js
-    val interval = interval
-  end)
+  Js.Unsafe.obj [|("interval", Js.Unsafe.inject interval)|]
 
 let encode_texture_options topts =
   match topts with
@@ -90,51 +88,51 @@ let encode_texture_options topts =
 let load_texture name url topts =
   let opts_list = ("data", Js.Unsafe.inject (Js.string url)) :: (encode_texture_options topts) in
   let opts_obj = Js.Unsafe.obj (Array.of_list opts_list) in
-  Js.Unsafe.inject (object%js
-    val _c = Js.string "loadTexture"
-    val _n = Js.string name
-    val opts = opts_obj
-  end)
+  Js.Unsafe.obj [|
+    ("_c", Js.Unsafe.inject (Js.string "loadTexture"));
+    ("_n", Js.Unsafe.inject (Js.string name));
+    ("opts", Js.Unsafe.inject opts_obj)
+  |]
 
 let start_regl config =
   match config.builtin_programs with
   | Some progs ->
       let progs_array = Js.array (Array.of_list (List.map Js.string progs)) in
-      Js.Unsafe.inject (object%js
-        val _c = Js.string "start"
-        val virtWidth = config.virt_width
-        val virtHeight = config.virt_height
-        val fboNum = config.fbo_num
-        val programs = progs_array
-      end)
+      Js.Unsafe.obj [|
+        ("_c", Js.Unsafe.inject (Js.string "start"));
+        ("virtWidth", Js.Unsafe.inject config.virt_width);
+        ("virtHeight", Js.Unsafe.inject config.virt_height);
+        ("fboNum", Js.Unsafe.inject config.fbo_num);
+        ("programs", Js.Unsafe.inject progs_array)
+      |]
   | None ->
-      Js.Unsafe.inject (object%js
-        val _c = Js.string "start"
-        val virtWidth = config.virt_width
-        val virtHeight = config.virt_height
-        val fboNum = config.fbo_num
-      end)
+      Js.Unsafe.obj [|
+        ("_c", Js.Unsafe.inject (Js.string "start"));
+        ("virtWidth", Js.Unsafe.inject config.virt_width);
+        ("virtHeight", Js.Unsafe.inject config.virt_height);
+        ("fboNum", Js.Unsafe.inject config.fbo_num)
+      |]
 
 let create_regl_program name program =
-  Js.Unsafe.inject (object%js
-    val _c = Js.string "createGLProgram"
-    val _n = Js.string name
-    val proto = Regl_program.encode_program program
-  end)
+  Js.Unsafe.obj [|
+    ("_c", Js.Unsafe.inject (Js.string "createGLProgram"));
+    ("_n", Js.Unsafe.inject (Js.string name));
+    ("proto", Js.Unsafe.inject (Regl_program.encode_program program))
+  |]
 
 let config_regl config =
-  Js.Unsafe.inject (object%js
-    val _c = Js.string "config"
-    val config = encode_config config
-  end)
+  Js.Unsafe.obj [|
+    ("_c", Js.Unsafe.inject (Js.string "config"));
+    ("config", Js.Unsafe.inject (encode_config config))
+  |]
 
 let load_msdf_font name imgurl jsonurl =
-  Js.Unsafe.inject (object%js
-    val _c = Js.string "loadFont"
-    val _n = Js.string name
-    val img = Js.string imgurl
-    val json = Js.string jsonurl
-  end)
+  Js.Unsafe.obj [|
+    ("_c", Js.Unsafe.inject (Js.string "loadFont"));
+    ("_n", Js.Unsafe.inject (Js.string name));
+    ("img", Js.Unsafe.inject (Js.string imgurl));
+    ("json", Js.Unsafe.inject (Js.string jsonurl))
+  |]
 
 let decode_recv_msg v =
   let get_string_field path =
@@ -166,12 +164,12 @@ let decode_recv_msg v =
 (* Export functions for js_of_ocaml *)
 let () =
   Js.export "REGL"
-    (object%js
-      method loadTexture name url opts = load_texture name url opts
-      method startREGL config = start_regl config
-      method createREGLProgram name program = create_regl_program name program
-      method configREGL config = config_regl config
-      method loadMSDFFont name imgurl jsonurl = load_msdf_font name imgurl jsonurl
-      method decodeRecvMsg v = decode_recv_msg v
-      method render renderable = Regl_common.render renderable
-    end)
+    (Js.Unsafe.obj [|
+      ("loadTexture", Js.Unsafe.inject (fun name url opts -> load_texture name url opts));
+      ("startREGL", Js.Unsafe.inject (fun config -> start_regl config));
+      ("createREGLProgram", Js.Unsafe.inject (fun name program -> create_regl_program name program));
+      ("configREGL", Js.Unsafe.inject (fun config -> config_regl config));
+      ("loadMSDFFont", Js.Unsafe.inject (fun name imgurl jsonurl -> load_msdf_font name imgurl jsonurl));
+      ("decodeRecvMsg", Js.Unsafe.inject (fun v -> decode_recv_msg v));
+      ("render", Js.Unsafe.inject (fun renderable -> Regl_common.render renderable))
+    |])
