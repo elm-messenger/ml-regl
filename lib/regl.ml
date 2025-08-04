@@ -168,6 +168,7 @@ let decode_recv_msg v =
 
 (* Export functions for js_of_ocaml *)
 let init_regl () =
+  let canvas : Dom_html.canvasElement Js.t option ref = ref None in
   Js.export "REGL"
     (Js.Unsafe.obj
        [|
@@ -184,4 +185,6 @@ let init_regl () =
          ("decodeRecvMsg", Js.Unsafe.inject (fun v -> decode_recv_msg v));
          ( "render",
            Js.Unsafe.inject (fun renderable -> Regl_common.render renderable) );
-       |])
+         ("bind", Js.Unsafe.inject (fun c -> canvas := Some c));
+       |]);
+  canvas
