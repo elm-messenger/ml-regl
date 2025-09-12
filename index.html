@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="_build/default/test/test_ml_regl.bc.js"></script>
+</head>
+<body>
+    <canvas id="myCanvas"></canvas>
+    <script>
+        console.log(REGL, App);
+        const canvas = document.getElementById('myCanvas');
+        REGL.bind(canvas);
+        console.log(App.canvas());
+        
+    </script>
+</body>
+</html>
