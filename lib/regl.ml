@@ -167,6 +167,7 @@ let decode_recv_msg v =
   | _ -> None
 
 (* Export functions for js_of_ocaml *)
+(* You must run init_regl () to create the binding. *)
 let init_regl () =
   let canvas : Dom_html.canvasElement Js.t option ref = ref None in
   Js.export "REGL"
