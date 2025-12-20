@@ -180,8 +180,7 @@ type regl_output =
   | CreateREGLProgram of string * Regl_program.regl_program
   | ConfigREGL of regl_config
 
-(* Export functions for js_of_ocaml *)
-(* You must run init_regl () to create the binding. *)
+(* Creating the canvas app. Exposing MlApp. *)
 let create_app (init : Js.Unsafe.any -> 'a)
     (update :
       'a -> regl_input -> 'a * Regl_common.renderable * regl_output list) =

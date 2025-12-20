@@ -2,21 +2,20 @@ open Ml_regl
 open Js_of_ocaml
 
 let mycircle = Regl_builtin_programs.circle (3., 4.) 5. Color.red
-let canvas = Regl.init_regl ()
 
-let _ =
-  Js.export "App"
-    (Js.Unsafe.obj
-       [|
-         ( "canvas",
-           Js.Unsafe.inject (fun _ ->
-               match !canvas with
-               | Some c -> c
-               | None -> failwith "No canvas initialized") );
-       |])
+(* Start the app *)
 
-type model = { num : int }
+type model = { num : float }
 
-let update delta model = { num = model.num + delta }
+let init _ = { num = 0.0 }
 
-(* let view model = *)
+let update (m : model) (e : Regl.regl_input) =
+  let nm =
+    match e with
+    | Regl.Tick ts -> { num = ts }
+    | Regl.Event _ -> m
+    | Regl.REGLRecvMsg _ -> m
+  in
+  (nm, mycircle, [])
+
+let canvas = Regl.create_app init update
