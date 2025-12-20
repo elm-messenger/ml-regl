@@ -38,4 +38,20 @@ val create_regl_program : string -> Regl_program.regl_program -> Js.Unsafe.any
 val config_regl : regl_config -> Js.Unsafe.any
 val load_msdf_font : string -> string -> string -> Js.Unsafe.any
 val decode_recv_msg : Js.Unsafe.any -> regl_recv_msg option
-val init_regl : unit -> Dom_html.canvasElement Js.t option ref
+
+type regl_input =
+  | Tick of float
+  | Event of Js.Unsafe.any
+  | REGLRecvMsg of regl_recv_msg
+
+type regl_output =
+  | LoadFont of string * string * string
+  | LoadTexture of string * string * texture_options option
+  | StartREGL of regl_start_config
+  | CreateREGLProgram of string * Regl_program.regl_program
+  | ConfigREGL of regl_config
+
+val create_app :
+  (Js.Unsafe.any -> 'a) ->
+  ('a -> regl_input -> 'a * Regl_common.renderable * regl_output list) ->
+  Dom_html.canvasElement Js.t option ref

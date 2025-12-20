@@ -168,26 +168,55 @@ let decode_recv_msg v =
 
 external execCmd : Js.Unsafe.any -> unit = "REGL.execCmd" [@@js.global]
 
+type regl_input =
+  | Tick of float
+  | Event of Js.Unsafe.any
+  | REGLRecvMsg of regl_recv_msg
+
+type regl_output =
+  | LoadFont of string * string * string
+  | LoadTexture of string * string * texture_options option
+  | StartREGL of regl_start_config
+  | CreateREGLProgram of string * Regl_program.regl_program
+  | ConfigREGL of regl_config
+
 (* Export functions for js_of_ocaml *)
 (* You must run init_regl () to create the binding. *)
-let init_regl () =
+let create_app (init : Js.Unsafe.any -> 'a)
+    (update :
+      'a -> regl_input -> 'a * Regl_common.renderable * regl_output list) =
   let canvas : Dom_html.canvasElement Js.t option ref = ref None in
-  Js.export "REGL"
+  let model : 'a option ref = ref None in
+  let update_model (input : regl_input) =
+    match !model with
+    | Some m ->
+        let m', rd, outputs = update m input in
+        model := Some m';
+        List.iter
+          (function
+            | LoadFont (name, imgurl, jsonurl) ->
+                execCmd (load_msdf_font name imgurl jsonurl)
+            | LoadTexture (name, url, topts) ->
+                execCmd (load_texture name url topts)
+            | StartREGL cfg -> execCmd (start_regl cfg)
+            | CreateREGLProgram (name, prog) ->
+                execCmd (create_regl_program name prog)
+            | ConfigREGL cfg -> execCmd (config_regl cfg))
+          outputs;
+        Regl_common.render rd
+    | None -> Js.Unsafe.inject Js.null
+  in
+  Js.export "MlApp"
     (Js.Unsafe.obj
        [|
-         (* ( "loadTexture",
-           Js.Unsafe.inject (fun name url opts -> load_texture name url opts) );
-         ("startREGL", Js.Unsafe.inject (fun config -> start_regl config));
-         ( "createREGLProgram",
-           Js.Unsafe.inject (fun name program ->
-               create_regl_program name program) );
-         ("configREGL", Js.Unsafe.inject (fun config -> config_regl config));
-         ( "loadMSDFFont",
-           Js.Unsafe.inject (fun name imgurl jsonurl ->
-               load_msdf_font name imgurl jsonurl) );
-         ("decodeRecvMsg", Js.Unsafe.inject (fun v -> decode_recv_msg v));
-         ( "render",
-           Js.Unsafe.inject (fun renderable -> Regl_common.render renderable) ); *)
          ("bind", Js.Unsafe.inject (fun c -> canvas := Some c));
+         ("init", Js.Unsafe.inject (fun c -> model := Some (init c)));
+         ("update", Js.Unsafe.inject (fun ts -> update_model (Tick ts)));
+         ("event", Js.Unsafe.inject (fun ev -> update_model (Event ev)));
+         ( "recvREGLCmd",
+           Js.Unsafe.inject (fun recvcmd ->
+               match decode_recv_msg recvcmd with
+               | Some msg -> update_model (REGLRecvMsg msg)
+               | None -> Js.Unsafe.inject Js.null) );
        |]);
   canvas
