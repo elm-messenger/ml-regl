@@ -166,6 +166,8 @@ let decode_recv_msg v =
       | None -> None)
   | _ -> None
 
+external execCmd : Js.Unsafe.any -> unit = "REGL.execCmd" [@@js.global]
+
 (* Export functions for js_of_ocaml *)
 (* You must run init_regl () to create the binding. *)
 let init_regl () =
@@ -173,7 +175,7 @@ let init_regl () =
   Js.export "REGL"
     (Js.Unsafe.obj
        [|
-         ( "loadTexture",
+         (* ( "loadTexture",
            Js.Unsafe.inject (fun name url opts -> load_texture name url opts) );
          ("startREGL", Js.Unsafe.inject (fun config -> start_regl config));
          ( "createREGLProgram",
@@ -185,7 +187,7 @@ let init_regl () =
                load_msdf_font name imgurl jsonurl) );
          ("decodeRecvMsg", Js.Unsafe.inject (fun v -> decode_recv_msg v));
          ( "render",
-           Js.Unsafe.inject (fun renderable -> Regl_common.render renderable) );
+           Js.Unsafe.inject (fun renderable -> Regl_common.render renderable) ); *)
          ("bind", Js.Unsafe.inject (fun c -> canvas := Some c));
        |]);
   canvas

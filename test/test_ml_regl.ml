@@ -14,3 +14,9 @@ let _ =
                | Some c -> c
                | None -> failwith "No canvas initialized") );
        |])
+
+type model = { num : int }
+
+let update delta model = { num = model.num + delta }
+
+(* let view model = *)
