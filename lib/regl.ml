@@ -166,7 +166,7 @@ let decode_recv_msg v =
       | None -> None)
   | _ -> None
 
-external execCmd : Js.Unsafe.any -> unit = "REGL.execCmd" [@@js.global]
+external execCmd : Js.Unsafe.any -> unit = "MlREGL.execCmd" [@@js.global]
 
 type regl_input =
   | Tick of float
