@@ -1,2 +1,8 @@
-(test
- (name test_ml_regl))
+(executable
+ (name test_ml_regl)
+ (libraries js_of_ocaml ml_regl)
+ (modes js)
+ (preprocess
+  (pps js_of_ocaml-ppx))
+ (flags
+  (:standard -warn-error -A)))

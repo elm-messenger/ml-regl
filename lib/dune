@@ -1,7 +1,15 @@
 (library
- (name regl)
+ (name ml_regl)
+ (modules
+  color
+  regl_common
+  regl_program
+  regl_builtin_programs
+  regl_effects
+  regl_compositors
+  regl)
  (libraries js_of_ocaml)
- (public_name ml-regl)
+ (public_name regl)
  (preprocess
   (pps js_of_ocaml-ppx))
  (flags
