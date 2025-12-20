@@ -3,6 +3,10 @@ open Js_of_ocaml
 
 let mycircle = Regl_builtin_programs.circle (400., 300.) 100. Color.red
 
+let mytext txt =
+  Regl_builtin_programs.textbox_centered
+    (400., 300.) 50. txt "consolas" Color.black
+
 (* Start the app *)
 
 type model = { num : float }
@@ -30,6 +34,7 @@ let update (canvas : Dom_html.canvasElement Js.t option) (m : model)
     | Regl.Event _ -> m
     | Regl.REGLRecvMsg _ -> m
   in
-  (nm, mycircle, [])
+  let str_number = Printf.sprintf "%.1f" nm.num in
+  (nm, mytext str_number, [])
 
 let _ = Regl.create_app init update
