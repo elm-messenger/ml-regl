@@ -39,6 +39,8 @@ val config_regl : regl_config -> Js.Unsafe.any
 val load_msdf_font : string -> string -> string -> Js.Unsafe.any
 val decode_recv_msg : Js.Unsafe.any -> regl_recv_msg option
 
+val execCmd : Js.Unsafe.any -> unit
+
 type regl_input =
   | Tick of float
   | Event of Js.Unsafe.any
@@ -52,6 +54,9 @@ type regl_output =
   | ConfigREGL of regl_config
 
 val create_app :
-  (Js.Unsafe.any -> 'a) ->
-  ('a -> regl_input -> 'a * Regl_common.renderable * regl_output list) ->
-  Dom_html.canvasElement Js.t option ref
+  (Dom_html.canvasElement Js.t option -> Js.Unsafe.any -> 'a) ->
+  (Dom_html.canvasElement Js.t option ->
+  'a ->
+  regl_input ->
+  'a * Regl_common.renderable * regl_output list) ->
+  unit

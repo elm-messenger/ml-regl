@@ -166,7 +166,9 @@ let decode_recv_msg v =
       | None -> None)
   | _ -> None
 
-external execCmd : Js.Unsafe.any -> unit = "MlREGL.execCmd" [@@js.global]
+let execCmd x =
+  let mlregl = Js.Unsafe.global##.MlREGL in
+  mlregl##execCmd x;
 
 type regl_input =
   | Tick of float
@@ -181,15 +183,19 @@ type regl_output =
   | ConfigREGL of regl_config
 
 (* Creating the canvas app. Exposing MlApp. *)
-let create_app (init : Js.Unsafe.any -> 'a)
+let create_app
+    (init : Dom_html.canvasElement Js.t option -> Js.Unsafe.any -> 'a)
     (update :
-      'a -> regl_input -> 'a * Regl_common.renderable * regl_output list) =
+      Dom_html.canvasElement Js.t option ->
+      'a ->
+      regl_input ->
+      'a * Regl_common.renderable * regl_output list) =
   let canvas : Dom_html.canvasElement Js.t option ref = ref None in
   let model : 'a option ref = ref None in
   let update_model (input : regl_input) =
     match !model with
     | Some m ->
-        let m', rd, outputs = update m input in
+        let m', rd, outputs = update !canvas m input in
         model := Some m';
         List.iter
           (function
@@ -209,7 +215,7 @@ let create_app (init : Js.Unsafe.any -> 'a)
     (Js.Unsafe.obj
        [|
          ("bind", Js.Unsafe.inject (fun c -> canvas := Some c));
-         ("init", Js.Unsafe.inject (fun c -> model := Some (init c)));
+         ("init", Js.Unsafe.inject (fun c -> model := Some (init !canvas c)));
          ("update", Js.Unsafe.inject (fun ts -> update_model (Tick ts)));
          ("event", Js.Unsafe.inject (fun ev -> update_model (Event ev)));
          ( "recvREGLCmd",
@@ -217,5 +223,4 @@ let create_app (init : Js.Unsafe.any -> 'a)
                match decode_recv_msg recvcmd with
                | Some msg -> update_model (REGLRecvMsg msg)
                | None -> Js.Unsafe.inject Js.null) );
-       |]);
-  canvas
+       |])

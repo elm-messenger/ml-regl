@@ -12,8 +12,9 @@
     <script>
         const canvas = document.getElementById('myCanvas');
         MlApp.bind(canvas);
-        MlApp.init(); // Optional argument: initial message
         MlREGL.init(canvas, MlApp, []);
+
+        MlApp.init(); // Start REGL. Optional argument: initial message.
         
     </script>
 </body>
