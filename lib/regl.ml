@@ -168,7 +168,7 @@ let decode_recv_msg v =
 
 let execCmd x =
   let mlregl = Js.Unsafe.global##.MlREGL in
-  mlregl##execCmd x;
+  mlregl##execCmd x
 
 type regl_input =
   | Tick of float
