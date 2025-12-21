@@ -2,7 +2,7 @@
 
 (name regl)
 
-(version c5aec97-dirty)
+(version 0.1.0)
 
 (generate_opam_files true)
 
