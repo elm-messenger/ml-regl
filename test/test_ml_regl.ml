@@ -9,33 +9,63 @@ let mytext txt =
 
 (* Start the app *)
 
-type model = { num : float }
+type model = { start_time : float; last_time : float }
+
+let shapes (m : model) =
+  let numx = 50. in
+  let numy = 30. in
+  let nx = int_of_float numx * 2 in
+  let ny = int_of_float numy * 2 in
+  let t = m.last_time *. 30. in
+  let acc = ref [] in
+
+  for x = 0 to nx do
+    let fx = float_of_int x /. numx *. 1920. in
+    for y = 0 to ny do
+      let fy = float_of_int y /. numy *. 1000. in
+      acc :=
+        Regl_builtin_programs.triangle
+          (t +. fx, fy +. 15.)
+          (t +. fx +. 15., fy +. 45.)
+          (t +. fx +. 30., fy +. 15.)
+          Color.red
+        :: !acc
+    done
+  done;
+  (* List.rev !acc *)
+  !acc
 
 let view (m : model) =
-  let str_number = Printf.sprintf "%.1f" m.num in
-  Regl_common.group [] [ mycircle; mytext ("Time: " ^ str_number) ]
+  Regl_common.group [] ([ Regl_builtin_programs.clear Color.white ] @ shapes m)
 
 let init (canvas : Dom_html.canvasElement Js.t option) _ =
   let startconfig : Regl.regl_start_config =
     {
-      virt_width = 800.;
-      virt_height = 600.;
+      virt_width = 1920.;
+      virt_height = 1080.;
       fbo_num = 5;
       builtin_programs = None;
     }
   in
   let mc = Option.get canvas in
-  mc##.width := 800;
-  mc##.height := 600;
+  mc##.width := 1280;
+  mc##.height := 720;
   Regl.execCmd (Regl.start_regl startconfig);
-  { num = 0.0 }
+  { start_time = 0.0; last_time = 0.0 }
 
 let update (canvas : Dom_html.canvasElement Js.t option) (m : model)
     (e : Regl.regl_input) =
   let nm =
     match e with
-    | Regl.Tick ts -> { num = ts }
-    | Regl.Event _ -> m
+    | Regl.Tick ts ->
+        {
+          last_time =
+            (if m.start_time = 0.0 then 0. else (ts -. m.start_time) /. 1000.);
+          start_time = (if m.start_time = 0.0 then ts else m.start_time);
+        }
+    | Regl.Event event ->
+        (* Js.Unsafe.global##.console##log (Js.to_string event##._type); *)
+        m
     | Regl.REGLRecvMsg _ -> m
   in
   (nm, view nm, [])

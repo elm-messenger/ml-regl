@@ -2,25 +2,32 @@
 
 (name regl)
 
+(version 0.1.0)
+
 (generate_opam_files true)
 
 (source
- (github username/reponame))
+ (github elm-messenger/ml-regl))
 
-(authors "Author Name <author@example.com>")
+(authors "Yiming Xiang <yiming@cs.utexas.edu>")
 
-(maintainers "Maintainer Name <maintainer@example.com>")
+(maintainers "Yiming Xiang <yiming@cs.utexas.edu>")
 
-(license LICENSE)
+(license "BSD-3-Clause")
 
-(documentation https://url/to/documentation)
+(documentation https://github.com/elm-messenger/ml-regl)
 
 (package
  (name regl)
- (synopsis "A short synopsis")
- (description "A longer description")
- (depends ocaml)
+ (synopsis "OCaml bindings for the regl WebGL library")
+ (description
+  "This library provides OCaml bindings for the regl WebGL library, enabling functional and declarative graphics programming in web applications using OCaml.")
+ (depends
+  ("ocaml" (>= 4.13))
+  ("dune" (>= 3.19))
+  "js_of_ocaml"
+  "js_of_ocaml-ppx")
  (tags
-  ("add topics" "to describe" your project)))
+  (graphics web webgl bindings regl)))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/reference/dune-project/index.html
