@@ -172,7 +172,7 @@ let execCmd x =
 
 type regl_input =
   | Tick of float
-  | Event of Js.Unsafe.any
+  | Event of Dom_html.event Js.t
   | REGLRecvMsg of regl_recv_msg
 
 type regl_output =

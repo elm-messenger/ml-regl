@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <script src="_build/default/test/test_ml_regl.bc.js"></script>
     <script src="ml-regl-js/build/regl.js"></script>
 </head>
+
 <body>
     <canvas id="myCanvas"></canvas>
     <script>
@@ -15,7 +17,12 @@
         MlREGL.init(canvas, MlApp, []);
 
         MlApp.init(); // Start REGL. Optional argument: initial message.
-        
+
+        addEventListener("resize", (event) => {
+            MlApp.event(event);
+        });
+
     </script>
 </body>
+
 </html>
