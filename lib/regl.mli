@@ -52,10 +52,15 @@ type regl_output =
   | CreateREGLProgram of string * Regl_program.regl_program
   | ConfigREGL of regl_config
 
-val create_app :
-  (Dom_html.canvasElement Js.t option -> Js.Unsafe.any -> 'a) ->
-  (Dom_html.canvasElement Js.t option ->
+type 'a user_update_t =
+  Dom_html.canvasElement Js.t option ->
   'a ->
   regl_input ->
-  'a * Regl_common.renderable * regl_output list) ->
-  unit
+  'a * Regl_common.renderable * regl_output list
+
+val update_model :
+  regl_input ->
+  'a option ref ->
+  'a user_update_t ->
+  Dom_html.canvasElement Js.t option ->
+  Js.Unsafe.any

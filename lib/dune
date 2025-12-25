@@ -7,7 +7,8 @@
   regl_builtin_programs
   regl_effects
   regl_compositors
-  regl)
+  regl
+  app)
  (libraries js_of_ocaml)
  (public_name regl)
  (preprocess

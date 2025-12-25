@@ -182,45 +182,28 @@ type regl_output =
   | CreateREGLProgram of string * Regl_program.regl_program
   | ConfigREGL of regl_config
 
-(* Creating the canvas app. Exposing MlApp. *)
-let create_app
-    (init : Dom_html.canvasElement Js.t option -> Js.Unsafe.any -> 'a)
-    (update :
-      Dom_html.canvasElement Js.t option ->
-      'a ->
-      regl_input ->
-      'a * Regl_common.renderable * regl_output list) =
-  let canvas : Dom_html.canvasElement Js.t option ref = ref None in
-  let model : 'a option ref = ref None in
-  let update_model (input : regl_input) =
-    match !model with
-    | Some m ->
-        let m', rd, outputs = update !canvas m input in
-        model := Some m';
-        List.iter
-          (function
-            | LoadFont (name, imgurl, jsonurl) ->
-                execCmd (load_msdf_font name imgurl jsonurl)
-            | LoadTexture (name, url, topts) ->
-                execCmd (load_texture name url topts)
-            | StartREGL cfg -> execCmd (start_regl cfg)
-            | CreateREGLProgram (name, prog) ->
-                execCmd (create_regl_program name prog)
-            | ConfigREGL cfg -> execCmd (config_regl cfg))
-          outputs;
-        Regl_common.render rd
-    | None -> Js.Unsafe.inject Js.null
-  in
-  Js.export "MlApp"
-    (Js.Unsafe.obj
-       [|
-         ("bind", Js.Unsafe.inject (fun c -> canvas := Some c));
-         ("init", Js.Unsafe.inject (fun c -> model := Some (init !canvas c)));
-         ("update", Js.Unsafe.inject (fun ts -> update_model (Tick ts)));
-         ("event", Js.Unsafe.inject (fun ev -> update_model (Event ev)));
-         ( "recvREGLCmd",
-           Js.Unsafe.inject (fun recvcmd ->
-               match decode_recv_msg recvcmd with
-               | Some msg -> update_model (REGLRecvMsg msg)
-               | None -> Js.Unsafe.inject Js.null) );
-       |])
+type 'a user_update_t =
+  Dom_html.canvasElement Js.t option ->
+  'a ->
+  regl_input ->
+  'a * Regl_common.renderable * regl_output list
+
+let update_model (input : regl_input) (model : 'a option ref)
+    (update : 'a user_update_t) (canvas : Dom_html.canvasElement Js.t option) =
+  match !model with
+  | Some m ->
+      let m', rd, outputs = update canvas m input in
+      model := Some m';
+      List.iter
+        (function
+          | LoadFont (name, imgurl, jsonurl) ->
+              execCmd (load_msdf_font name imgurl jsonurl)
+          | LoadTexture (name, url, topts) ->
+              execCmd (load_texture name url topts)
+          | StartREGL cfg -> execCmd (start_regl cfg)
+          | CreateREGLProgram (name, prog) ->
+              execCmd (create_regl_program name prog)
+          | ConfigREGL cfg -> execCmd (config_regl cfg))
+        outputs;
+      Regl_common.render rd
+  | None -> Js.Unsafe.inject Js.null

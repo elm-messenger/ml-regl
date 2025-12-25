@@ -70,4 +70,4 @@ let update (canvas : Dom_html.canvasElement Js.t option) (m : model)
   in
   (nm, view nm, [])
 
-let _ = Regl.create_app init update
+let _ = App.create_app init update
