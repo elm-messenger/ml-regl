@@ -137,31 +137,30 @@ let load_msdf_font name imgurl jsonurl =
     |]
 
 let decode_recv_msg v =
-  let get_string_field path =
-    try Some (Js.to_string (Js.Unsafe.get v (Js.string path))) with _ -> None
+  let get_string o key =
+    try Some (Js.to_string (Js.Unsafe.get o (Js.string key))) with _ -> None
   in
-  let get_int_field path =
+  let get_int o key =
     try
       Some
-        (int_of_float (Js.float_of_number (Js.Unsafe.get v (Js.string path))))
+        (int_of_float (Js.float_of_number (Js.Unsafe.get o (Js.string key))))
     with _ -> None
   in
-  match get_string_field "_c" with
+  match get_string v "_c" with
   | Some "loadTexture" -> (
-      match
-        ( get_int_field "response.width",
-          get_int_field "response.height",
-          get_string_field "response.texture" )
-      with
+      let r = Js.Unsafe.get v (Js.string "response") in
+      match (get_int r "width", get_int r "height", get_string r "texture") with
       | Some w, Some h, Some txtname ->
           Some (REGLTextureLoaded { name = txtname; width = w; height = h })
       | _ -> None)
   | Some "loadFont" -> (
-      match get_string_field "response.font" with
+      let r = Js.Unsafe.get v (Js.string "response") in
+      match get_string r "font" with
       | Some name -> Some (REGLFontLoaded name)
       | None -> None)
   | Some "createGLProgram" -> (
-      match get_string_field "response._n" with
+      let r = Js.Unsafe.get v (Js.string "response") in
+      match get_string r "_n" with
       | Some name -> Some (REGLProgramCreated name)
       | None -> None)
   | _ -> None
@@ -170,10 +169,30 @@ let execCmd x =
   let mlregl = Js.Unsafe.global##.MlREGL in
   mlregl##execCmd x
 
+let execAudioCmd actions loads =
+  let mlregl = Js.Unsafe.global##.MlREGL in
+  let payload =
+    Js.Unsafe.obj
+      [|
+        ("actions", Js.Unsafe.inject (Js.array (Array.of_list actions)));
+        ("loads", Js.Unsafe.inject (Js.array (Array.of_list loads)));
+      |]
+  in
+  mlregl##execAudioCmd payload
+
+let load_audio request_id url =
+  execAudioCmd [] [ Regl_audio.encode_load_request request_id url ]
+
+type audio_recv_msg =
+  | AudioLoadSuccess of { request_id : int; source : Regl_audio.source }
+  | AudioLoadFailed of { request_id : int; error : Regl_audio.load_error }
+  | AudioContextReady of { sample_rate : int }
+
 type regl_input =
   | Tick of float
   | Event of Dom_html.event Js.t
   | REGLRecvMsg of regl_recv_msg
+  | AudioMsg of audio_recv_msg
 
 type regl_output =
   | LoadFont of string * string * string
@@ -181,6 +200,7 @@ type regl_output =
   | StartREGL of regl_start_config
   | CreateREGLProgram of string * Regl_program.regl_program
   | ConfigREGL of regl_config
+  | LoadAudio of int * string
 
 (* Creating the canvas app. Exposing MlApp. *)
 let create_app
@@ -189,14 +209,16 @@ let create_app
       Dom_html.canvasElement Js.t option ->
       'a ->
       regl_input ->
-      'a * Regl_common.renderable * regl_output list) =
+      'a * Regl_common.renderable * Regl_audio.audio * regl_output list) =
   let canvas : Dom_html.canvasElement Js.t option ref = ref None in
   let model : 'a option ref = ref None in
+  let audio_state : Regl_audio.prev_state ref = ref Regl_audio.empty_state in
   let update_model (input : regl_input) =
     match !model with
     | Some m ->
-        let m', rd, outputs = update !canvas m input in
+        let m', rd, audio_tree, outputs = update !canvas m input in
         model := Some m';
+        let pending_loads = ref [] in
         List.iter
           (function
             | LoadFont (name, imgurl, jsonurl) ->
@@ -206,8 +228,17 @@ let create_app
             | StartREGL cfg -> execCmd (start_regl cfg)
             | CreateREGLProgram (name, prog) ->
                 execCmd (create_regl_program name prog)
-            | ConfigREGL cfg -> execCmd (config_regl cfg))
+            | ConfigREGL cfg -> execCmd (config_regl cfg)
+            | LoadAudio (rid, url) ->
+                pending_loads :=
+                  Regl_audio.encode_load_request rid url :: !pending_loads)
           outputs;
+        let new_state, audio_actions =
+          Regl_audio.diff !audio_state audio_tree
+        in
+        audio_state := new_state;
+        if audio_actions <> [] || !pending_loads <> [] then
+          execAudioCmd audio_actions (List.rev !pending_loads);
         Regl_common.render rd
     | None -> Js.Unsafe.inject Js.null
   in
@@ -222,5 +253,17 @@ let create_app
            Js.Unsafe.inject (fun recvcmd ->
                match decode_recv_msg recvcmd with
                | Some msg -> update_model (REGLRecvMsg msg)
+               | None -> Js.Unsafe.inject Js.null) );
+         ( "recvAudioMsg",
+           Js.Unsafe.inject (fun recvmsg ->
+               match Regl_audio.decode_recv_msg recvmsg with
+               | Some (Regl_audio.LoadSuccess { request_id; source }) ->
+                   update_model
+                     (AudioMsg (AudioLoadSuccess { request_id; source }))
+               | Some (Regl_audio.LoadFailed { request_id; error }) ->
+                   update_model
+                     (AudioMsg (AudioLoadFailed { request_id; error }))
+               | Some (Regl_audio.ContextReady { sample_rate }) ->
+                   update_model (AudioMsg (AudioContextReady { sample_rate }))
                | None -> Js.Unsafe.inject Js.null) );
        |])

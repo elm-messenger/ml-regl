@@ -1,42 +1,66 @@
 open Ml_regl
 open Js_of_ocaml
 
-let mycircle = Regl_builtin_programs.circle (400., 300.) 100. Color.red
+(* Demo: load a texture and an audio source, render the image, click to play. *)
 
-let mytext txt =
-  Regl_builtin_programs.textbox_centered (400., 300.) 50. txt "consolas"
-    Color.black
+type sound_state =
+  | Loading of int  (** request id *)
+  | Loaded of Regl_audio.source
+  | Failed
 
-(* Start the app *)
+type model = {
+  current_ts : float;  (** absolute ms from latest Tick *)
+  texture_loaded : bool;
+  sound : sound_state;
+  play_at : float option;  (** absolute ms; if Some, that's when to start *)
+}
 
-type model = { start_time : float; last_time : float }
+let audio_request_id = 0
 
-let shapes (m : model) =
-  let numx = 50. in
-  let numy = 30. in
-  let nx = int_of_float numx * 2 in
-  let ny = int_of_float numy * 2 in
-  let t = m.last_time *. 30. in
-  let acc = ref [] in
+let initial_model =
+  {
+    current_ts = 0.0;
+    texture_loaded = false;
+    sound = Loading audio_request_id;
+    play_at = None;
+  }
 
-  for x = 0 to nx do
-    let fx = float_of_int x /. numx *. 1920. in
-    for y = 0 to ny do
-      let fy = float_of_int y /. numy *. 1000. in
-      acc :=
-        Regl_builtin_programs.triangle
-          (t +. fx, fy +. 15.)
-          (t +. fx +. 15., fy +. 45.)
-          (t +. fx +. 30., fy +. 15.)
-          Color.red
-        :: !acc
-    done
-  done;
-  (* List.rev !acc *)
-  !acc
+let texture_name = "enemy"
+let texture_url = "test/assets/enemy.png"
+let audio_url = "test/assets/test.ogg"
 
 let view (m : model) =
-  Regl_common.group [] ([ Regl_builtin_programs.clear Color.white ] @ shapes m)
+  let bg = Regl_builtin_programs.clear Color.white in
+  let img =
+    if m.texture_loaded then
+      [
+        Regl_builtin_programs.centered_texture (960., 540.) (256., 256.) 0.0
+          texture_name;
+      ]
+    else
+      [
+        Regl_builtin_programs.textbox_centered (960., 540.) 40.
+          "Loading texture..." "consolas" Color.black;
+      ]
+  in
+  let status =
+    let msg =
+      match m.sound with
+      | Loading _ -> "Audio: loading..."
+      | Loaded _ ->
+          if m.play_at <> None then "Audio: playing (click to retrigger)"
+          else "Audio: ready (click to play)"
+      | Failed -> "Audio: failed to load"
+    in
+    Regl_builtin_programs.textbox_centered (960., 900.) 40. msg "consolas"
+      Color.black
+  in
+  Regl_common.group [] ([ bg ] @ img @ [ status ])
+
+let audio (m : model) : Regl_audio.audio =
+  match (m.sound, m.play_at) with
+  | Loaded src, Some t -> Regl_audio.audio src t
+  | _ -> Regl_audio.silence
 
 let init (canvas : Dom_html.canvasElement Js.t option) _ =
   let startconfig : Regl.regl_start_config =
@@ -51,23 +75,51 @@ let init (canvas : Dom_html.canvasElement Js.t option) _ =
   mc##.width := 1280;
   mc##.height := 720;
   Regl.execCmd (Regl.start_regl startconfig);
-  { start_time = 0.0; last_time = 0.0 }
+  Regl.execCmd (Regl.load_texture texture_name texture_url None);
+  Regl.load_audio audio_request_id audio_url;
+  initial_model
 
-let update (canvas : Dom_html.canvasElement Js.t option) (m : model)
+let update (_canvas : Dom_html.canvasElement Js.t option) (m : model)
     (e : Regl.regl_input) =
-  let nm =
-    match e with
-    | Regl.Tick ts ->
-        {
-          last_time =
-            (if m.start_time = 0.0 then 0. else (ts -. m.start_time) /. 1000.);
-          start_time = (if m.start_time = 0.0 then ts else m.start_time);
-        }
-    | Regl.Event event ->
-        (* Js.Unsafe.global##.console##log (Js.to_string event##._type); *)
-        m
-    | Regl.REGLRecvMsg _ -> m
-  in
-  (nm, view nm, [])
+  match e with
+  | Regl.Tick ts ->
+      let nm = { m with current_ts = ts } in
+      (nm, view nm, audio nm, [])
+  | Regl.Event event ->
+      let ty = Js.to_string event##._type in
+      let nm =
+        if ty = "click" || ty = "mousedown" || ty = "touchstart" then
+          match m.sound with
+          | Loaded _ ->
+              (* Use the latest Tick timestamp as the absolute clock. *)
+              let now = m.current_ts in
+              { m with play_at = Some now }
+          | _ -> m
+        else m
+      in
+      (nm, view nm, audio nm, [])
+  | Regl.REGLRecvMsg msg ->
+      let nm =
+        match msg with
+        | Regl.REGLTextureLoaded t when t.name = texture_name ->
+            { m with texture_loaded = true }
+        | _ -> m
+      in
+      (nm, view nm, audio nm, [])
+  | Regl.AudioMsg msg ->
+      let nm =
+        match msg with
+        | Regl.AudioLoadSuccess { request_id; source } -> (
+            match m.sound with
+            | Loading rid when rid = request_id ->
+                { m with sound = Loaded source }
+            | _ -> m)
+        | Regl.AudioLoadFailed { request_id; _ } -> (
+            match m.sound with
+            | Loading rid when rid = request_id -> { m with sound = Failed }
+            | _ -> m)
+        | Regl.AudioContextReady _ -> m
+      in
+      (nm, view nm, audio nm, [])
 
 let _ = Regl.create_app init update

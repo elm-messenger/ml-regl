@@ -40,10 +40,22 @@ val load_msdf_font : string -> string -> string -> Js.Unsafe.any
 val decode_recv_msg : Js.Unsafe.any -> regl_recv_msg option
 val execCmd : Js.Unsafe.any -> unit
 
+val load_audio : int -> string -> unit
+(** [load_audio request_id url] loads an audio file. The eventual
+    [AudioLoadSuccess] / [AudioLoadFailed] message will carry the same
+    [request_id] back. Use this from [init] (or anywhere outside [update])
+    where you can't return a [LoadAudio] output. *)
+
+type audio_recv_msg =
+  | AudioLoadSuccess of { request_id : int; source : Regl_audio.source }
+  | AudioLoadFailed of { request_id : int; error : Regl_audio.load_error }
+  | AudioContextReady of { sample_rate : int }
+
 type regl_input =
   | Tick of float
   | Event of Dom_html.event Js.t
   | REGLRecvMsg of regl_recv_msg
+  | AudioMsg of audio_recv_msg
 
 type regl_output =
   | LoadFont of string * string * string
@@ -51,11 +63,15 @@ type regl_output =
   | StartREGL of regl_start_config
   | CreateREGLProgram of string * Regl_program.regl_program
   | ConfigREGL of regl_config
+  | LoadAudio of int * string
+      (** [LoadAudio (request_id, url)]. The user picks [request_id]; the
+          eventual [AudioLoadSuccess] / [AudioLoadFailed] will carry the same
+          id back. *)
 
 val create_app :
   (Dom_html.canvasElement Js.t option -> Js.Unsafe.any -> 'a) ->
   (Dom_html.canvasElement Js.t option ->
   'a ->
   regl_input ->
-  'a * Regl_common.renderable * regl_output list) ->
+  'a * Regl_common.renderable * Regl_audio.audio * regl_output list) ->
   unit

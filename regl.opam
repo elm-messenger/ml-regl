@@ -13,7 +13,7 @@ doc: "https://github.com/elm-messenger/ml-regl"
 bug-reports: "https://github.com/elm-messenger/ml-regl/issues"
 depends: [
   "ocaml" {>= "4.13"}
-  "dune" {>= "3.19" & >= "3.19"}
+  "dune" {>= "3.19"}
   "js_of_ocaml"
   "js_of_ocaml-ppx"
   "odoc" {with-doc}
