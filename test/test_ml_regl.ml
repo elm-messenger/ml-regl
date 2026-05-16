@@ -4,7 +4,7 @@ open Js_of_ocaml
 (* Demo: load a texture and an audio source, render the image, click to play. *)
 
 type sound_state =
-  | Loading of int  (** request id *)
+  | Loading
   | Loaded of Regl_audio.source
   | Failed
 
@@ -15,13 +15,11 @@ type model = {
   play_at : float option;  (** absolute ms; if Some, that's when to start *)
 }
 
-let audio_request_id = 0
-
 let initial_model =
   {
     current_ts = 0.0;
     texture_loaded = false;
-    sound = Loading audio_request_id;
+    sound = Loading;
     play_at = None;
   }
 
@@ -46,7 +44,7 @@ let view (m : model) =
   let status =
     let msg =
       match m.sound with
-      | Loading _ -> "Audio: loading..."
+      | Loading -> "Audio: loading..."
       | Loaded _ ->
           if m.play_at <> None then "Audio: playing (click to retrigger)"
           else "Audio: ready (click to play)"
@@ -76,7 +74,7 @@ let init (canvas : Dom_html.canvasElement Js.t option) _ =
   mc##.height := 720;
   Regl.execCmd (Regl.start_regl startconfig);
   Regl.execCmd (Regl.load_texture texture_name texture_url None);
-  Regl.load_audio audio_request_id audio_url;
+  Regl.load_audio audio_url;
   initial_model
 
 let update (_canvas : Dom_html.canvasElement Js.t option) (m : model)
@@ -109,16 +107,12 @@ let update (_canvas : Dom_html.canvasElement Js.t option) (m : model)
   | Regl.AudioMsg msg ->
       let nm =
         match msg with
-        | Regl.AudioLoadSuccess { request_id; source } -> (
-            match m.sound with
-            | Loading rid when rid = request_id ->
-                { m with sound = Loaded source }
-            | _ -> m)
-        | Regl.AudioLoadFailed { request_id; _ } -> (
-            match m.sound with
-            | Loading rid when rid = request_id -> { m with sound = Failed }
-            | _ -> m)
-        | Regl.AudioContextReady _ -> m
+        | Regl.AudioLoadSuccess { audio_url = url; source }
+          when url = audio_url ->
+            { m with sound = Loaded source }
+        | Regl.AudioLoadFailed { audio_url = url; _ } when url = audio_url ->
+            { m with sound = Failed }
+        | _ -> m
       in
       (nm, view nm, audio nm, [])
 

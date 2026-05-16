@@ -180,12 +180,11 @@ let execAudioCmd actions loads =
   in
   mlregl##execAudioCmd payload
 
-let load_audio request_id url =
-  execAudioCmd [] [ Regl_audio.encode_load_request request_id url ]
+let load_audio url = execAudioCmd [] [ Regl_audio.encode_load_request url ]
 
 type audio_recv_msg =
-  | AudioLoadSuccess of { request_id : int; source : Regl_audio.source }
-  | AudioLoadFailed of { request_id : int; error : Regl_audio.load_error }
+  | AudioLoadSuccess of { audio_url : string; source : Regl_audio.source }
+  | AudioLoadFailed of { audio_url : string; error : Regl_audio.load_error }
   | AudioContextReady of { sample_rate : int }
 
 type regl_input =
@@ -200,7 +199,7 @@ type regl_output =
   | StartREGL of regl_start_config
   | CreateREGLProgram of string * Regl_program.regl_program
   | ConfigREGL of regl_config
-  | LoadAudio of int * string
+  | LoadAudio of string
 
 (* Creating the canvas app. Exposing MlApp. *)
 let create_app
@@ -229,9 +228,9 @@ let create_app
             | CreateREGLProgram (name, prog) ->
                 execCmd (create_regl_program name prog)
             | ConfigREGL cfg -> execCmd (config_regl cfg)
-            | LoadAudio (rid, url) ->
+            | LoadAudio url ->
                 pending_loads :=
-                  Regl_audio.encode_load_request rid url :: !pending_loads)
+                  Regl_audio.encode_load_request url :: !pending_loads)
           outputs;
         let new_state, audio_actions =
           Regl_audio.diff !audio_state audio_tree
@@ -257,12 +256,12 @@ let create_app
          ( "recvAudioMsg",
            Js.Unsafe.inject (fun recvmsg ->
                match Regl_audio.decode_recv_msg recvmsg with
-               | Some (Regl_audio.LoadSuccess { request_id; source }) ->
+               | Some (Regl_audio.LoadSuccess { audio_url; source }) ->
                    update_model
-                     (AudioMsg (AudioLoadSuccess { request_id; source }))
-               | Some (Regl_audio.LoadFailed { request_id; error }) ->
+                     (AudioMsg (AudioLoadSuccess { audio_url; source }))
+               | Some (Regl_audio.LoadFailed { audio_url; error }) ->
                    update_model
-                     (AudioMsg (AudioLoadFailed { request_id; error }))
+                     (AudioMsg (AudioLoadFailed { audio_url; error }))
                | Some (Regl_audio.ContextReady { sample_rate }) ->
                    update_model (AudioMsg (AudioContextReady { sample_rate }))
                | None -> Js.Unsafe.inject Js.null) );

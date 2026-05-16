@@ -261,16 +261,12 @@ let diff (prev : prev_state) (new_audio : audio) :
 
 (* {1 Load + recv} *)
 
-let encode_load_request request_id url : Js.Unsafe.any =
-  Js.Unsafe.obj
-    [|
-      ("requestId", js_int request_id);
-      ("audioUrl", js_str url);
-    |]
+let encode_load_request url : Js.Unsafe.any =
+  Js.Unsafe.obj [| ("audioUrl", js_str url) |]
 
 type recv_msg =
-  | LoadSuccess of { request_id : int; source : source }
-  | LoadFailed of { request_id : int; error : load_error }
+  | LoadSuccess of { audio_url : string; source : source }
+  | LoadFailed of { audio_url : string; error : load_error }
   | ContextReady of { sample_rate : int }
 
 let decode_load_error = function
@@ -295,19 +291,17 @@ let decode_recv_msg v =
   match get_string "_c" with
   | Some "audioLoadSuccess" -> (
       match
-        ( get_int "requestId",
-          get_int "bufferId",
-          get_float "duration" )
+        (get_string "audioUrl", get_int "bufferId", get_float "duration")
       with
-      | Some request_id, Some buffer_id, Some duration ->
+      | Some audio_url, Some buffer_id, Some duration ->
           Some
             (LoadSuccess
-               { request_id; source = { buffer_id; duration } })
+               { audio_url; source = { buffer_id; duration } })
       | _ -> None)
   | Some "audioLoadFailed" -> (
-      match (get_int "requestId", get_string "error") with
-      | Some request_id, Some err ->
-          Some (LoadFailed { request_id; error = decode_load_error err })
+      match (get_string "audioUrl", get_string "error") with
+      | Some audio_url, Some err ->
+          Some (LoadFailed { audio_url; error = decode_load_error err })
       | _ -> None)
   | Some "audioContextReady" -> (
       match get_int "sampleRate" with

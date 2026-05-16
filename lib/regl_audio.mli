@@ -63,13 +63,13 @@ val empty_state : prev_state
 val diff : prev_state -> audio -> prev_state * Js.Unsafe.any list
 
 (** Encode a load request as a JS message. *)
-val encode_load_request : int -> string -> Js.Unsafe.any
+val encode_load_request : string -> Js.Unsafe.any
 
 (** Decode an incoming message from the JS audio runtime. Returns [None] for
     messages that aren't audio-related or are malformed. *)
 type recv_msg =
-  | LoadSuccess of { request_id : int; source : source }
-  | LoadFailed of { request_id : int; error : load_error }
+  | LoadSuccess of { audio_url : string; source : source }
+  | LoadFailed of { audio_url : string; error : load_error }
   | ContextReady of { sample_rate : int }
 
 val decode_recv_msg : Js.Unsafe.any -> recv_msg option
