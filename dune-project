@@ -25,6 +25,7 @@
  (depends
   ("ocaml" (>= 4.13))
   ("dune" (>= 3.19))
+  "ocaml-protoc-plugin"
   "js_of_ocaml"
   "js_of_ocaml-ppx")
  (tags

@@ -3,21 +3,14 @@
 ## OCaml -> JS (implemented in JS)
 
 - `execCmd`: execute REGL commands (textures / fonts / programs / config / start)
-- `execAudioCmd`: execute audio commands. Payload is `{ actions, loads }`
-  where `actions` is a list of audio diff messages
-  (`startSound` / `stopSound` / `setVolume` / `setVolumeAt` /
-  `setLoopConfig` / `setPlaybackRate`) and `loads` is a list of
-  `{ requestId, audioUrl }`.
+- `execAudioCmdPb`: execute an audio command batch encoded as protobuf bytes.
 
 ## JS -> OCaml (implemented in OCaml, exposed as `MlApp` methods)
 
 - `update(ts)`: tick. Returns the renderable JS object.
 - `event(ev)`: forward a DOM event.
 - `recvREGLCmd(msg)`: forward a REGL response (texture/font/program loaded).
-- `recvAudioMsg(msg)`: forward an audio response. Shapes:
-  - `{ _c: "audioContextReady", sampleRate }`
-  - `{ _c: "audioLoadSuccess", requestId, bufferId, duration }` (duration in seconds)
-  - `{ _c: "audioLoadFailed",  requestId, error }`
+- `recvAudioMsgPb(bytes)`: forward an audio backend event encoded as protobuf bytes.
 
 ## User update return value
 
@@ -30,13 +23,13 @@
    diffs this against the previous frame and emits the appropriate
    start/stop/setVolume/etc. messages.
 4. Side-effect outputs: REGL commands (`StartREGL`, `LoadTexture`, ...)
-   and audio loads (`LoadAudio (request_id, url)`).
+   and audio loads (`LoadAudio url`).
 
 ## Audio module (`Regl_audio`)
 
 - `audio ?config source start_time` — play a source from `start_time` (ms).
 - `silence`, `group`, `scale_volume`, `scale_volume_at`, `offset_by`,
   `length`.
-- `LoadAudio (request_id, url)` triggers a fetch + decode; the response
-  comes back as `AudioMsg (AudioLoadSuccess { request_id; source })` or
-  `AudioMsg (AudioLoadFailed { request_id; error })`.
+- `LoadAudio url` triggers a fetch + decode; the response comes back as
+  `AudioMsg (AudioLoadSuccess { audio_url; source })` or
+  `AudioMsg (AudioLoadFailed { audio_url; error })`.

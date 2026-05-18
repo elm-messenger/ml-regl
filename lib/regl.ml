@@ -169,18 +169,14 @@ let execCmd x =
   let mlregl = Js.Unsafe.global##.MlREGL in
   mlregl##execCmd x
 
-let execAudioCmd actions loads =
+let execAudioCmdPb actions loads =
   let mlregl = Js.Unsafe.global##.MlREGL in
-  let payload =
-    Js.Unsafe.obj
-      [|
-        ("actions", Js.Unsafe.inject (Js.array (Array.of_list actions)));
-        ("loads", Js.Unsafe.inject (Js.array (Array.of_list loads)));
-      |]
-  in
-  mlregl##execAudioCmd payload
+  let payload = Regl_audio.encode_command_batch_pb actions loads in
+  let bytes = Regl_transport.uint8array_of_bytes payload in
+  Js.Unsafe.fun_call (Js.Unsafe.get mlregl "execAudioCmdPb")
+    [| Js.Unsafe.inject bytes |]
 
-let load_audio url = execAudioCmd [] [ Regl_audio.encode_load_request url ]
+let load_audio url = execAudioCmdPb [] [ url ]
 
 type audio_recv_msg =
   | AudioLoadSuccess of { audio_url : string; source : Regl_audio.source }
@@ -228,16 +224,12 @@ let create_app
             | CreateREGLProgram (name, prog) ->
                 execCmd (create_regl_program name prog)
             | ConfigREGL cfg -> execCmd (config_regl cfg)
-            | LoadAudio url ->
-                pending_loads :=
-                  Regl_audio.encode_load_request url :: !pending_loads)
+            | LoadAudio url -> pending_loads := url :: !pending_loads)
           outputs;
-        let new_state, audio_actions =
-          Regl_audio.diff !audio_state audio_tree
-        in
+        let new_state, audio_actions = Regl_audio.diff_actions !audio_state audio_tree in
         audio_state := new_state;
         if audio_actions <> [] || !pending_loads <> [] then
-          execAudioCmd audio_actions (List.rev !pending_loads);
+          execAudioCmdPb audio_actions (List.rev !pending_loads);
         Regl_common.render rd
     | None -> Js.Unsafe.inject Js.null
   in
@@ -253,9 +245,13 @@ let create_app
                match decode_recv_msg recvcmd with
                | Some msg -> update_model (REGLRecvMsg msg)
                | None -> Js.Unsafe.inject Js.null) );
-         ( "recvAudioMsg",
-           Js.Unsafe.inject (fun recvmsg ->
-               match Regl_audio.decode_recv_msg recvmsg with
+        ( "recvAudioMsgPb",
+          Js.Unsafe.inject (fun recvmsg ->
+              let payload =
+                Regl_transport.bytes_of_uint8array
+                  (Js.Unsafe.coerce recvmsg)
+              in
+              match Regl_audio.decode_recv_msg_pb payload with
                | Some (Regl_audio.LoadSuccess { audio_url; source }) ->
                    update_model
                      (AudioMsg (AudioLoadSuccess { audio_url; source }))

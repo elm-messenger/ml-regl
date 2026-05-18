@@ -1,5 +1,3 @@
-open Js_of_ocaml
-
 type source = { buffer_id : int; duration : float }
 type load_error = FailedToDecode | NetworkError | UnknownError
 type loop = { loop_start : float; loop_end : float }
@@ -89,91 +87,89 @@ let shifted_volume_timelines f =
   List.map (fun tl -> List.map (fun (t, v) -> (t +. f.offset, v)) tl)
     f.volume_timelines
 
-(* {1 JS encoders} *)
+module Audio_pb = Transport_audio.Mlregl.Transport.Audio
 
-let js_str s = Js.Unsafe.inject (Js.string s)
-let js_num f = Js.Unsafe.inject (Js.number_of_float f)
-let js_int i = Js.Unsafe.inject (Js.number_of_float (float_of_int i))
+type audio_action =
+  | StartSound of int * flat
+  | StopSound of int
+  | SetVolume of int * float
+  | SetLoopConfig of int * loop option
+  | SetPlaybackRate of int * float
+  | SetVolumeAt of int * flat
 
-let encode_loop = function
+(* {1 Encoders} *)
+
+let proto_volume_point (time, volume) =
+  Audio_pb.VolumePoint.make ~time ~volume ()
+
+let proto_volume_timeline timeline =
+  Audio_pb.VolumeTimeline.make ~points:(List.map proto_volume_point timeline) ()
+
+let proto_volume_timelines timelines =
+  List.map proto_volume_timeline timelines
+
+let proto_loop = function
   | Some { loop_start; loop_end } ->
-      Js.Unsafe.inject
-        (Js.Unsafe.obj
-           [|
-             ("loopStart", js_num loop_start);
-             ("loopEnd", js_num loop_end);
-           |])
-  | None -> Js.Unsafe.inject Js.null
+      Some (Audio_pb.LoopConfig.make ~loop_start ~loop_end ())
+  | None -> None
 
-let encode_volume_timeline tl =
-  let arr =
-    Array.of_list
-      (List.map
-         (fun (t, v) ->
-           Js.Unsafe.obj [| ("time", js_num t); ("volume", js_num v) |])
-         tl)
+let proto_action = function
+  | StartSound (node_group_id, f) ->
+      Audio_pb.AudioAction.make
+        ~kind:
+          (`Start_sound
+            (Audio_pb.StartSound.make
+           ~node_group_id
+           ~buffer_id:f.source.buffer_id
+           ~start_time:(abs_start_time f)
+           ~start_at:f.start_at
+           ~volume:f.volume
+           ~volume_timelines:
+             (proto_volume_timelines (shifted_volume_timelines f))
+           ?loop:(proto_loop f.loop)
+           ~playback_rate:f.playback_rate
+           ()))
+        ()
+  | StopSound node_group_id ->
+      Audio_pb.AudioAction.make
+        ~kind:(`Stop_sound (Audio_pb.StopSound.make ~node_group_id () ))
+        ()
+  | SetVolume (node_group_id, volume) ->
+      Audio_pb.AudioAction.make
+        ~kind:(`Set_volume (Audio_pb.SetVolume.make ~node_group_id ~volume ()))
+        ()
+  | SetLoopConfig (node_group_id, loop) ->
+      Audio_pb.AudioAction.make
+        ~kind:
+          (`Set_loop_config
+            (Audio_pb.SetLoopConfig.make ~node_group_id ?loop:(proto_loop loop)
+               ()))
+        ()
+  | SetPlaybackRate (node_group_id, playback_rate) ->
+      Audio_pb.AudioAction.make
+        ~kind:
+          (`Set_playback_rate
+            (Audio_pb.SetPlaybackRate.make ~node_group_id ~playback_rate ()))
+        ()
+  | SetVolumeAt (node_group_id, f) ->
+      Audio_pb.AudioAction.make
+        ~kind:
+          (`Set_volume_at
+            (Audio_pb.SetVolumeAt.make ~node_group_id
+               ~volume_at:(proto_volume_timelines (shifted_volume_timelines f))
+               ()))
+        ()
+
+let encode_command_batch_pb actions load_urls =
+  let batch =
+    Audio_pb.AudioCommandBatch.make
+      ~actions:(List.map proto_action actions)
+      ~loads:
+        (List.map (fun audio_url -> Audio_pb.LoadRequest.make ~audio_url ()) load_urls)
+      ()
   in
-  Js.array arr
-
-let encode_volume_timelines tls =
-  let arr = Array.of_list (List.map encode_volume_timeline tls) in
-  Js.array arr
-
-let encode_start node_group_id (f : flat) : Js.Unsafe.any =
-  Js.Unsafe.obj
-    [|
-      ("action", js_str "startSound");
-      ("nodeGroupId", js_int node_group_id);
-      ("bufferId", js_int f.source.buffer_id);
-      ("startTime", js_num (abs_start_time f));
-      ("startAt", js_num f.start_at);
-      ("volume", js_num f.volume);
-      ( "volumeTimelines",
-        Js.Unsafe.inject (encode_volume_timelines (shifted_volume_timelines f))
-      );
-      ("loop", encode_loop f.loop);
-      ("playbackRate", js_num f.playback_rate);
-    |]
-
-let encode_stop node_group_id : Js.Unsafe.any =
-  Js.Unsafe.obj
-    [|
-      ("action", js_str "stopSound"); ("nodeGroupId", js_int node_group_id);
-    |]
-
-let encode_set_volume node_group_id volume : Js.Unsafe.any =
-  Js.Unsafe.obj
-    [|
-      ("action", js_str "setVolume");
-      ("nodeGroupId", js_int node_group_id);
-      ("volume", js_num volume);
-    |]
-
-let encode_set_loop node_group_id loop : Js.Unsafe.any =
-  Js.Unsafe.obj
-    [|
-      ("action", js_str "setLoopConfig");
-      ("nodeGroupId", js_int node_group_id);
-      ("loop", encode_loop loop);
-    |]
-
-let encode_set_playback_rate node_group_id rate : Js.Unsafe.any =
-  Js.Unsafe.obj
-    [|
-      ("action", js_str "setPlaybackRate");
-      ("nodeGroupId", js_int node_group_id);
-      ("playbackRate", js_num rate);
-    |]
-
-let encode_set_volume_at node_group_id (f : flat) : Js.Unsafe.any =
-  Js.Unsafe.obj
-    [|
-      ("action", js_str "setVolumeAt");
-      ("nodeGroupId", js_int node_group_id);
-      ( "volumeAt",
-        Js.Unsafe.inject (encode_volume_timelines (shifted_volume_timelines f))
-      );
-    |]
+  Audio_pb.AudioCommandBatch.to_proto batch
+  |> Ocaml_protoc_plugin.Writer.contents |> Bytes.of_string
 
 (* {1 Diff} *)
 
@@ -210,8 +206,8 @@ let pop_first p xs =
   in
   loop [] xs
 
-let diff (prev : prev_state) (new_audio : audio) :
-    prev_state * Js.Unsafe.any list =
+let diff_actions (prev : prev_state) (new_audio : audio) :
+    prev_state * audio_action list =
   let new_flats = flatten new_audio in
   (* For each previous entry, try to find a still-valid voice in [new_flats].
      Three outcomes:
@@ -232,18 +228,18 @@ let diff (prev : prev_state) (new_audio : audio) :
             | Some (new_flat, leftover) ->
                 let m = ref msgs in
                 if old_flat.volume <> new_flat.volume then
-                  m := encode_set_volume id new_flat.volume :: !m;
+                  m := SetVolume (id, new_flat.volume) :: !m;
                 if old_flat.loop <> new_flat.loop then
-                  m := encode_set_loop id new_flat.loop :: !m;
+                  m := SetLoopConfig (id, new_flat.loop) :: !m;
                 if old_flat.playback_rate <> new_flat.playback_rate then
-                  m := encode_set_playback_rate id new_flat.playback_rate :: !m;
+                  m := SetPlaybackRate (id, new_flat.playback_rate) :: !m;
                 if
                   shifted_volume_timelines old_flat
                   <> shifted_volume_timelines new_flat
-                then m := encode_set_volume_at id new_flat :: !m;
+                then m := SetVolumeAt (id, new_flat) :: !m;
                 walk rest leftover !m ((id, new_flat) :: kept)
             | None ->
-                walk rest new_flats (encode_stop id :: msgs) kept))
+                walk rest new_flats (StopSound id :: msgs) kept))
   in
   let kept, leftovers, msgs = walk prev.entries new_flats [] [] in
   (* Anything left in [leftovers] is a brand-new voice. *)
@@ -255,56 +251,42 @@ let diff (prev : prev_state) (new_audio : audio) :
       let id = !next_id in
       incr next_id;
       entries := (id, f) :: !entries;
-      msgs := encode_start id f :: !msgs)
+      msgs := StartSound (id, f) :: !msgs)
     leftovers;
   ({ entries = !entries; next_id = !next_id }, List.rev !msgs)
 
 (* {1 Load + recv} *)
-
-let encode_load_request url : Js.Unsafe.any =
-  Js.Unsafe.obj [| ("audioUrl", js_str url) |]
 
 type recv_msg =
   | LoadSuccess of { audio_url : string; source : source }
   | LoadFailed of { audio_url : string; error : load_error }
   | ContextReady of { sample_rate : int }
 
-let decode_load_error = function
-  | "NetworkError" -> NetworkError
-  | "FailedToDecode" -> FailedToDecode
-  | _ -> UnknownError
+let decode_pb_load_error = function
+  | Audio_pb.AudioLoadError.AUDIO_LOAD_ERROR_FAILED_TO_DECODE -> FailedToDecode
+  | Audio_pb.AudioLoadError.AUDIO_LOAD_ERROR_NETWORK -> NetworkError
+  | Audio_pb.AudioLoadError.AUDIO_LOAD_ERROR_UNKNOWN -> UnknownError
 
-let decode_recv_msg v =
-  let get_string path =
-    try Some (Js.to_string (Js.Unsafe.get v (Js.string path))) with _ -> None
-  in
-  let get_int path =
-    try
-      Some
-        (int_of_float (Js.float_of_number (Js.Unsafe.get v (Js.string path))))
-    with _ -> None
-  in
-  let get_float path =
-    try Some (Js.float_of_number (Js.Unsafe.get v (Js.string path)))
-    with _ -> None
-  in
-  match get_string "_c" with
-  | Some "audioLoadSuccess" -> (
-      match
-        (get_string "audioUrl", get_int "bufferId", get_float "duration")
-      with
-      | Some audio_url, Some buffer_id, Some duration ->
-          Some
-            (LoadSuccess
-               { audio_url; source = { buffer_id; duration } })
-      | _ -> None)
-  | Some "audioLoadFailed" -> (
-      match (get_string "audioUrl", get_string "error") with
-      | Some audio_url, Some err ->
-          Some (LoadFailed { audio_url; error = decode_load_error err })
-      | _ -> None)
-  | Some "audioContextReady" -> (
-      match get_int "sampleRate" with
-      | Some sample_rate -> Some (ContextReady { sample_rate })
-      | None -> None)
-  | _ -> None
+let decode_recv_msg_pb payload =
+  try
+    let reader = Ocaml_protoc_plugin.Reader.create (Bytes.to_string payload) in
+    let ev = Audio_pb.AudioBackendEvent.from_proto_exn reader in
+    match ev with
+    | `Audio_context_ready sample_rate ->
+        Some (ContextReady { sample_rate })
+    | `Audio_load_success msg ->
+        Some
+          (LoadSuccess
+             {
+               audio_url = msg.audio_url;
+               source = { buffer_id = msg.buffer_id; duration = msg.duration };
+             })
+    | `Audio_load_failed msg ->
+        Some
+          (LoadFailed
+             {
+               audio_url = msg.audio_url;
+               error = decode_pb_load_error msg.error;
+             })
+    | `not_set -> None
+  with _ -> None

@@ -1,5 +1,3 @@
-open Js_of_ocaml
-
 (** Declarative audio for ml-regl.
 
     Inspired by [elm-audio]. The user describes which sounds *should* be
@@ -58,12 +56,15 @@ type prev_state
 
 val empty_state : prev_state
 
-(** [diff prev new_audio] produces an updated state and a list of port
-    messages (already encoded as JS objects) to send to the audio runtime. *)
-val diff : prev_state -> audio -> prev_state * Js.Unsafe.any list
+type audio_action
+(** Opaque diff action used by the transport layer. *)
 
-(** Encode a load request as a JS message. *)
-val encode_load_request : string -> Js.Unsafe.any
+val diff_actions : prev_state -> audio -> prev_state * audio_action list
+(** [diff_actions prev new_audio] produces an updated state and typed audio
+    actions describing how the backend should be updated. *)
+
+val encode_command_batch_pb : audio_action list -> string list -> bytes
+(** Encode an audio action/load batch into protobuf wire format. *)
 
 (** Decode an incoming message from the JS audio runtime. Returns [None] for
     messages that aren't audio-related or are malformed. *)
@@ -72,4 +73,6 @@ type recv_msg =
   | LoadFailed of { audio_url : string; error : load_error }
   | ContextReady of { sample_rate : int }
 
-val decode_recv_msg : Js.Unsafe.any -> recv_msg option
+val decode_recv_msg_pb : bytes -> recv_msg option
+(** Decode a protobuf event from the JS audio runtime. Returns [None] on
+    malformed payloads. *)

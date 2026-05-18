@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package mlregl.transport.backend;
+
+message TextureCrop {
+  int32 x = 1;
+  int32 y = 2;
+  int32 width = 3;
+  int32 height = 4;
+}
+
+enum TextureMagOption {
+  TEXTURE_MAG_OPTION_LINEAR = 0;
+  TEXTURE_MAG_OPTION_NEAREST = 1;
+}
+
+enum TextureMinOption {
+  TEXTURE_MIN_OPTION_LINEAR = 0;
+  TEXTURE_MIN_OPTION_NEAREST = 1;
+  TEXTURE_MIN_OPTION_NEAREST_MIPMAP_NEAREST = 2;
+  TEXTURE_MIN_OPTION_LINEAR_MIPMAP_NEAREST = 3;
+  TEXTURE_MIN_OPTION_NEAREST_MIPMAP_LINEAR = 4;
+  TEXTURE_MIN_OPTION_LINEAR_MIPMAP_LINEAR = 5;
+}
+
+message TextureOptions {
+  TextureMagOption mag = 1;
+  TextureMinOption min = 2;
+  TextureCrop crop = 3;
+}
+
+message LoadTexture {
+  string name = 1;
+  string url = 2;
+  TextureOptions options = 3;
+}
+
+message LoadFont {
+  string name = 1;
+  string image_url = 2;
+  string json_url = 3;
+}
+
+message ReglConfig {
+  double interval_ms = 1;
+}
+
+message StartRegl {
+  double virt_width = 1;
+  double virt_height = 2;
+  uint32 fbo_num = 3;
+  repeated string builtin_programs = 4;
+}
+
+message CreateProgram {
+  string name = 1;
+  bytes encoded_program = 2;
+}
+
+message LoadAudio {
+  string audio_url = 1;
+}
+
+message BackendCommand {
+  oneof kind {
+    LoadTexture load_texture = 1;
+    LoadFont load_font = 2;
+    ReglConfig config_regl = 3;
+    StartRegl start_regl = 4;
+    CreateProgram create_program = 5;
+    LoadAudio load_audio = 6;
+  }
+}
+
+message BackendCommandBatch {
+  repeated BackendCommand commands = 1;
+}

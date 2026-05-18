@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package mlregl.transport.render;
+
+message ScalarArray {
+  repeated double values = 1 [packed = true];
+}
+
+message Camera {
+  double x = 1;
+  double y = 2;
+  double zoom = 3;
+  double rotation = 4;
+}
+
+message ProgramCallField {
+  string key = 1;
+  oneof value {
+    double number_value = 2;
+    string string_value = 3;
+    ScalarArray number_array_value = 4;
+    bytes binary_value = 5;
+  }
+}
+
+message AtomicRenderable {
+  repeated ProgramCallField fields = 1;
+}
+
+message Effect {
+  repeated ProgramCallField fields = 1;
+}
+
+message CompositeRenderable {
+  AtomicRenderable compositor = 1;
+  Renderable left = 2;
+  Renderable right = 3;
+}
+
+message GroupRenderable {
+  repeated Effect effects = 1;
+  repeated Renderable children = 2;
+  Camera camera = 3;
+}
+
+message Renderable {
+  oneof kind {
+    AtomicRenderable atomic = 1;
+    GroupRenderable group = 2;
+    CompositeRenderable composite = 3;
+  }
+}
+
+message RenderFrame {
+  Renderable root = 1;
+}

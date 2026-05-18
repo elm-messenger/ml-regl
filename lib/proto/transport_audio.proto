@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+package mlregl.transport.audio;
+
+message VolumePoint {
+  double time = 1;
+  double volume = 2;
+}
+
+message VolumeTimeline {
+  repeated VolumePoint points = 1;
+}
+
+message LoopConfig {
+  double loop_start = 1;
+  double loop_end = 2;
+}
+
+message StartSound {
+  uint32 node_group_id = 1;
+  uint32 buffer_id = 2;
+  double start_time = 3;
+  double start_at = 4;
+  double volume = 5;
+  repeated VolumeTimeline volume_timelines = 6;
+  LoopConfig loop = 7;
+  double playback_rate = 8;
+}
+
+message StopSound {
+  uint32 node_group_id = 1;
+}
+
+message SetVolume {
+  uint32 node_group_id = 1;
+  double volume = 2;
+}
+
+message SetVolumeAt {
+  uint32 node_group_id = 1;
+  repeated VolumeTimeline volume_at = 2;
+}
+
+message SetLoopConfig {
+  uint32 node_group_id = 1;
+  LoopConfig loop = 2;
+}
+
+message SetPlaybackRate {
+  uint32 node_group_id = 1;
+  double playback_rate = 2;
+}
+
+message AudioAction {
+  oneof kind {
+    StartSound start_sound = 1;
+    StopSound stop_sound = 2;
+    SetVolume set_volume = 3;
+    SetVolumeAt set_volume_at = 4;
+    SetLoopConfig set_loop_config = 5;
+    SetPlaybackRate set_playback_rate = 6;
+  }
+}
+
+message LoadRequest {
+  string audio_url = 1;
+}
+
+message AudioCommandBatch {
+  repeated AudioAction actions = 1;
+  repeated LoadRequest loads = 2;
+}
+
+message AudioContextReady {
+  uint32 sample_rate = 1;
+}
+
+enum AudioLoadError {
+  AUDIO_LOAD_ERROR_UNKNOWN = 0;
+  AUDIO_LOAD_ERROR_NETWORK = 1;
+  AUDIO_LOAD_ERROR_FAILED_TO_DECODE = 2;
+}
+
+message AudioLoadSuccess {
+  string audio_url = 1;
+  uint32 buffer_id = 2;
+  double duration = 3;
+}
+
+message AudioLoadFailed {
+  string audio_url = 1;
+  AudioLoadError error = 2;
+}
+
+message AudioBackendEvent {
+  oneof kind {
+    AudioContextReady audio_context_ready = 1;
+    AudioLoadSuccess audio_load_success = 2;
+    AudioLoadFailed audio_load_failed = 3;
+  }
+}

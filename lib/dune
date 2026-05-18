@@ -1,3 +1,25 @@
+
+(rule
+ (targets transport_audio.ml)
+ (deps
+  (:proto proto/transport_audio.proto))
+ (action
+  (run protoc -I proto --ocaml_out=. %{proto})))
+
+(rule
+ (targets transport_backend.ml)
+ (deps
+  (:proto proto/transport_backend.proto))
+ (action
+  (run protoc -I proto --ocaml_out=. %{proto})))
+
+(rule
+ (targets transport_render.ml)
+ (deps
+  (:proto proto/transport_render.proto))
+ (action
+  (run protoc -I proto --ocaml_out=. %{proto})))
+
 (library
  (name ml_regl)
  (modules
@@ -7,9 +29,13 @@
   regl_builtin_programs
   regl_effects
   regl_compositors
+  transport_audio
+  transport_backend
+  transport_render
+  regl_transport
   regl_audio
   regl)
- (libraries js_of_ocaml)
+ (libraries js_of_ocaml ocaml-protoc-plugin)
  (public_name regl)
  (preprocess
   (pps js_of_ocaml-ppx))
