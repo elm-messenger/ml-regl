@@ -212,7 +212,7 @@ let encode_backend_command_batch_pb (commands : Backend_pb.BackendCommand.t list
     : bytes =
   Backend_pb.BackendCommandBatch.to_proto commands
   |> Ocaml_protoc_plugin.Writer.contents
-  |> Bytes.of_string
+  |> Bytes.unsafe_of_string
 
 let execCmdPb commands =
   let mlregl = Js.Unsafe.global##.MlREGL in
@@ -223,7 +223,7 @@ let execCmdPb commands =
 
 let decode_backend_event_pb (payload : bytes) : regl_recv_msg option =
   try
-    let reader = Ocaml_protoc_plugin.Reader.create (Bytes.to_string payload) in
+    let reader = Ocaml_protoc_plugin.Reader.create (Bytes.unsafe_to_string payload) in
     match Backend_pb.BackendEvent.from_proto_exn reader with
     | `Texture_loaded { name; width; height } ->
         Some (REGLTextureLoaded { name; width; height })
@@ -323,7 +323,8 @@ let create_app
         audio_state := new_state;
         if audio_actions <> [] || !pending_loads <> [] then
           execAudioCmdPb audio_actions (List.rev !pending_loads);
-        Regl_common.render rd
+        Js.Unsafe.inject
+          (Regl_transport.uint8array_of_bytes (Regl_common.encode_frame_pb rd))
     | None -> Js.Unsafe.inject Js.null
   in
   Js.export "MlApp"

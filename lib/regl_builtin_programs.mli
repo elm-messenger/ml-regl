@@ -1,4 +1,3 @@
-open Js_of_ocaml
 open Regl_common
 
 type primitive =
@@ -10,7 +9,6 @@ type primitive =
   | TriangleStrip
   | TriangleFan
 
-val primitive_to_value : primitive -> Js.Unsafe.any
 val empty : renderable
 val clear : Color.t -> renderable
 

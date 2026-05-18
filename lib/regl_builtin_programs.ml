@@ -1,4 +1,3 @@
-open Js_of_ocaml
 open Regl_common
 
 type primitive =
@@ -10,80 +9,56 @@ type primitive =
   | TriangleStrip
   | TriangleFan
 
-let primitive_to_value = function
-  | Points -> Js.Unsafe.inject (Js.string "points")
-  | Lines -> Js.Unsafe.inject (Js.string "lines")
-  | LineLoop -> Js.Unsafe.inject (Js.string "line loop")
-  | LineStrip -> Js.Unsafe.inject (Js.string "line strip")
-  | Triangles -> Js.Unsafe.inject (Js.string "triangles")
-  | TriangleStrip -> Js.Unsafe.inject (Js.string "triangle strip")
-  | TriangleFan -> Js.Unsafe.inject (Js.string "triangle fan")
+let primitive_to_string = function
+  | Points -> "points"
+  | Lines -> "lines"
+  | LineLoop -> "line loop"
+  | LineStrip -> "line strip"
+  | Triangles -> "triangles"
+  | TriangleStrip -> "triangle strip"
+  | TriangleFan -> "triangle fan"
 
-let empty = gen_prog []
+let empty = atomic []
 
 let clear color =
   let rgba_list = to_rgba_list color in
-  let color_array =
-    Js.array (Array.of_list (List.map Js.number_of_float rgba_list))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 1.0));
-      ("_n", Js.Unsafe.inject (Js.string "clear"));
-      ("color", Js.Unsafe.inject color_array);
-      ("depth", Js.Unsafe.inject (Js.number_of_float 1.0));
+      num "_c" 1.0;
+      str "_n" "clear";
+      nums "color" rgba_list;
+      num "depth" 1.0;
     ]
 
 let triangle (x1, y1) (x2, y2) (x3, y3) color =
   let rgba_list = to_rgba_list color in
-  let pos_array =
-    Js.array
-      (Array.of_list (List.map Js.number_of_float [ x1; y1; x2; y2; x3; y3 ]))
-  in
-  let color_array =
-    Js.array (Array.of_list (List.map Js.number_of_float rgba_list))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "triangle"));
-      ("pos", Js.Unsafe.inject pos_array);
-      ("color", Js.Unsafe.inject color_array);
+      num "_c" 0.0;
+      str "_p" "triangle";
+      nums "pos" [ x1; y1; x2; y2; x3; y3 ];
+      nums "color" rgba_list;
     ]
 
 let quad (x1, y1) (x2, y2) (x3, y3) (x4, y4) color =
   let rgba_list = to_rgba_list color in
-  let pos_array =
-    Js.array
-      (Array.of_list
-         (List.map Js.number_of_float [ x1; y1; x2; y2; x3; y3; x4; y4 ]))
-  in
-  let color_array =
-    Js.array (Array.of_list (List.map Js.number_of_float rgba_list))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "quad"));
-      ("pos", Js.Unsafe.inject pos_array);
-      ("color", Js.Unsafe.inject color_array);
+      num "_c" 0.0;
+      str "_p" "quad";
+      nums "pos" [ x1; y1; x2; y2; x3; y3; x4; y4 ];
+      nums "color" rgba_list;
     ]
 
 let rect_centered (x, y) (w, h) angle color =
   let rgba_list = to_rgba_list color in
-  let posize_array =
-    Js.array (Array.of_list (List.map Js.number_of_float [ x; y; w; h ]))
-  in
-  let color_array =
-    Js.array (Array.of_list (List.map Js.number_of_float rgba_list))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "rect"));
-      ("posize", Js.Unsafe.inject posize_array);
-      ("angle", Js.Unsafe.inject (Js.number_of_float angle));
-      ("color", Js.Unsafe.inject color_array);
+      num "_c" 0.0;
+      str "_p" "rect";
+      nums "posize" [ x; y; w; h ];
+      num "angle" angle;
+      nums "color" rgba_list;
     ]
 
 let rect (x, y) (w, h) color =
@@ -97,20 +72,13 @@ let poly xs color =
       (List.init (List.length xs - 2) (fun i -> i + 1))
   in
   let rgba_list = to_rgba_list color in
-  let pos_array = Js.array (Array.of_list (List.map Js.number_of_float pos)) in
-  let elem_array =
-    Js.array (Array.of_list (List.map Js.number_of_float elem))
-  in
-  let color_array =
-    Js.array (Array.of_list (List.map Js.number_of_float rgba_list))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "poly"));
-      ("pos", Js.Unsafe.inject pos_array);
-      ("elem", Js.Unsafe.inject elem_array);
-      ("color", Js.Unsafe.inject color_array);
+      num "_c" 0.0;
+      str "_p" "poly";
+      nums "pos" pos;
+      nums "elem" elem;
+      nums "color" rgba_list;
     ]
 
 let lines xs color =
@@ -119,63 +87,42 @@ let lines xs color =
   in
   let elem = List.init (2 * List.length xs) float_of_int in
   let rgba_list = to_rgba_list color in
-  let pos_array = Js.array (Array.of_list (List.map Js.number_of_float pos)) in
-  let elem_array =
-    Js.array (Array.of_list (List.map Js.number_of_float elem))
-  in
-  let color_array =
-    Js.array (Array.of_list (List.map Js.number_of_float rgba_list))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "poly"));
-      ("pos", Js.Unsafe.inject pos_array);
-      ("elem", Js.Unsafe.inject elem_array);
-      ("color", Js.Unsafe.inject color_array);
-      ("prim", primitive_to_value Lines);
+      num "_c" 0.0;
+      str "_p" "poly";
+      nums "pos" pos;
+      nums "elem" elem;
+      nums "color" rgba_list;
+      str "prim" (primitive_to_string Lines);
     ]
 
 let linestrip xs color =
   let pos = List.concat_map (fun (x, y) -> [ x; y ]) xs in
   let elem = List.init (List.length xs) float_of_int in
   let rgba_list = to_rgba_list color in
-  let pos_array = Js.array (Array.of_list (List.map Js.number_of_float pos)) in
-  let elem_array =
-    Js.array (Array.of_list (List.map Js.number_of_float elem))
-  in
-  let color_array =
-    Js.array (Array.of_list (List.map Js.number_of_float rgba_list))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "poly"));
-      ("pos", Js.Unsafe.inject pos_array);
-      ("elem", Js.Unsafe.inject elem_array);
-      ("color", Js.Unsafe.inject color_array);
-      ("prim", primitive_to_value LineStrip);
+      num "_c" 0.0;
+      str "_p" "poly";
+      nums "pos" pos;
+      nums "elem" elem;
+      nums "color" rgba_list;
+      str "prim" (primitive_to_string LineStrip);
     ]
 
 let lineloop xs color =
   let pos = List.concat_map (fun (x, y) -> [ x; y ]) xs in
   let elem = List.init (List.length xs) float_of_int in
   let rgba_list = to_rgba_list color in
-  let pos_array = Js.array (Array.of_list (List.map Js.number_of_float pos)) in
-  let elem_array =
-    Js.array (Array.of_list (List.map Js.number_of_float elem))
-  in
-  let color_array =
-    Js.array (Array.of_list (List.map Js.number_of_float rgba_list))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "poly"));
-      ("pos", Js.Unsafe.inject pos_array);
-      ("elem", Js.Unsafe.inject elem_array);
-      ("color", Js.Unsafe.inject color_array);
-      ("prim", primitive_to_value LineLoop);
+      num "_c" 0.0;
+      str "_p" "poly";
+      nums "pos" pos;
+      nums "elem" elem;
+      nums "color" rgba_list;
+      str "prim" (primitive_to_string LineLoop);
     ]
 
 let function_curve f (x, y) (left, right) freq color =
@@ -190,193 +137,122 @@ let function_curve f (x, y) (left, right) freq color =
 let poly_prim xs elem color prim =
   let pos = List.concat_map (fun (x, y) -> [ x; y ]) xs in
   let rgba_list = to_rgba_list color in
-  let pos_array = Js.array (Array.of_list (List.map Js.number_of_float pos)) in
-  let elem_array =
-    Js.array (Array.of_list (List.map Js.number_of_float elem))
-  in
-  let color_array =
-    Js.array (Array.of_list (List.map Js.number_of_float rgba_list))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "poly"));
-      ("pos", Js.Unsafe.inject pos_array);
-      ("elem", Js.Unsafe.inject elem_array);
-      ("color", Js.Unsafe.inject color_array);
-      ("prim", primitive_to_value prim);
+      num "_c" 0.0;
+      str "_p" "poly";
+      nums "pos" pos;
+      nums "elem" elem;
+      nums "color" rgba_list;
+      str "prim" (primitive_to_string prim);
     ]
 
 let circle (x1, y1) r color =
   let rgba_list = to_rgba_list color in
-  let cr_array =
-    Js.array (Array.of_list (List.map Js.number_of_float [ x1; y1; r ]))
-  in
-  let color_array =
-    Js.array (Array.of_list (List.map Js.number_of_float rgba_list))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "circle"));
-      ("cr", Js.Unsafe.inject cr_array);
-      ("color", Js.Unsafe.inject color_array);
+      num "_c" 0.0;
+      str "_p" "circle";
+      nums "cr" [ x1; y1; r ];
+      nums "color" rgba_list;
     ]
 
 let rounded_rect (x1, y1) (w, h) r color =
   let rgba_list = to_rgba_list color in
-  let cs_array =
-    Js.array (Array.of_list (List.map Js.number_of_float [ x1; y1; w; h ]))
-  in
-  let color_array =
-    Js.array (Array.of_list (List.map Js.number_of_float rgba_list))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "roundedRect"));
-      ("cs", Js.Unsafe.inject cs_array);
-      ("radius", Js.Unsafe.inject (Js.number_of_float r));
-      ("color", Js.Unsafe.inject color_array);
+      num "_c" 0.0;
+      str "_p" "roundedRect";
+      nums "cs" [ x1; y1; w; h ];
+      num "radius" r;
+      nums "color" rgba_list;
     ]
 
 let texture (x1, y1) (x2, y2) (x3, y3) (x4, y4) name =
-  let pos_array =
-    Js.array
-      (Array.of_list
-         (List.map Js.number_of_float [ x1; y1; x2; y2; x3; y3; x4; y4 ]))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "texture"));
-      ("texture", Js.Unsafe.inject (Js.string name));
-      ("pos", Js.Unsafe.inject pos_array);
+      num "_c" 0.0;
+      str "_p" "texture";
+      str "texture" name;
+      nums "pos" [ x1; y1; x2; y2; x3; y3; x4; y4 ];
     ]
 
 let texture_cropped (x1, y1) (x2, y2) (x3, y3) (x4, y4) (cx1, cy1) (cx2, cy2)
     (cx3, cy3) (cx4, cy4) name =
-  let pos_array =
-    Js.array
-      (Array.of_list
-         (List.map Js.number_of_float [ x1; y1; x2; y2; x3; y3; x4; y4 ]))
-  in
-  let texc_array =
-    Js.array
-      (Array.of_list
-         (List.map Js.number_of_float
-            [ cx1; cy1; cx2; cy2; cx3; cy3; cx4; cy4 ]))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "textureCropped"));
-      ("texture", Js.Unsafe.inject (Js.string name));
-      ("pos", Js.Unsafe.inject pos_array);
-      ("texc", Js.Unsafe.inject texc_array);
+      num "_c" 0.0;
+      str "_p" "textureCropped";
+      str "texture" name;
+      nums "pos" [ x1; y1; x2; y2; x3; y3; x4; y4 ];
+      nums "texc" [ cx1; cy1; cx2; cy2; cx3; cy3; cx4; cy4 ];
     ]
 
 let rec rect_texture (x, y) (w, h) name =
   centered_texture (x +. (w /. 2.0), y +. (h /. 2.0)) (w, h) 0.0 name
 
 and centered_texture (x, y) (w, h) angle name =
-  let posize_array =
-    Js.array (Array.of_list (List.map Js.number_of_float [ x; y; w; h ]))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "centeredTexture"));
-      ("texture", Js.Unsafe.inject (Js.string name));
-      ("posize", Js.Unsafe.inject posize_array);
-      ("angle", Js.Unsafe.inject (Js.number_of_float angle));
+      num "_c" 0.0;
+      str "_p" "centeredTexture";
+      str "texture" name;
+      nums "posize" [ x; y; w; h ];
+      num "angle" angle;
     ]
 
 let rect_texture_cropped (x, y) (w, h) (cx, cy) (cw, ch) name =
-  let pos_array =
-    Js.array
-      (Array.of_list
-         (List.map Js.number_of_float
-            [ x; y; x +. w; y; x +. w; y +. h; x; y +. h ]))
-  in
-  let texc_array =
-    Js.array
-      (Array.of_list
-         (List.map Js.number_of_float
-            [
-              cx;
-              1.0 -. cy;
-              cx +. cw;
-              1.0 -. cy;
-              cx +. cw;
-              1.0 -. cy -. ch;
-              cx;
-              1.0 -. cy -. ch;
-            ]))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "textureCropped"));
-      ("texture", Js.Unsafe.inject (Js.string name));
-      ("pos", Js.Unsafe.inject pos_array);
-      ("texc", Js.Unsafe.inject texc_array);
+      num "_c" 0.0;
+      str "_p" "textureCropped";
+      str "texture" name;
+      nums "pos" [ x; y; x +. w; y; x +. w; y +. h; x; y +. h ];
+      nums "texc"
+        [
+          cx;
+          1.0 -. cy;
+          cx +. cw;
+          1.0 -. cy;
+          cx +. cw;
+          1.0 -. cy -. ch;
+          cx;
+          1.0 -. cy -. ch;
+        ];
     ]
 
 let centered_texture_cropped (x, y) (w, h) angle (cx, cy) (cw, ch) name =
-  let posize_array =
-    Js.array (Array.of_list (List.map Js.number_of_float [ x; y; w; h ]))
-  in
-  let texc_array =
-    Js.array (Array.of_list (List.map Js.number_of_float [ cx; cy; cw; ch ]))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "centeredCroppedTexture"));
-      ("texture", Js.Unsafe.inject (Js.string name));
-      ("posize", Js.Unsafe.inject posize_array);
-      ("angle", Js.Unsafe.inject (Js.number_of_float angle));
-      ("texc", Js.Unsafe.inject texc_array);
+      num "_c" 0.0;
+      str "_p" "centeredCroppedTexture";
+      str "texture" name;
+      nums "posize" [ x; y; w; h ];
+      num "angle" angle;
+      nums "texc" [ cx; cy; cw; ch ];
     ]
 
 (* Functions with alpha *)
 let texture_with_alpha (x1, y1) (x2, y2) (x3, y3) (x4, y4) alpha name =
-  let pos_array =
-    Js.array
-      (Array.of_list
-         (List.map Js.number_of_float [ x1; y1; x2; y2; x3; y3; x4; y4 ]))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "texture"));
-      ("texture", Js.Unsafe.inject (Js.string name));
-      ("pos", Js.Unsafe.inject pos_array);
-      ("alpha", Js.Unsafe.inject (Js.number_of_float alpha));
+      num "_c" 0.0;
+      str "_p" "texture";
+      str "texture" name;
+      nums "pos" [ x1; y1; x2; y2; x3; y3; x4; y4 ];
+      num "alpha" alpha;
     ]
 
 let texture_cropped_with_alpha (x1, y1) (x2, y2) (x3, y3) (x4, y4) (cx1, cy1)
     (cx2, cy2) (cx3, cy3) (cx4, cy4) alpha name =
-  let pos_array =
-    Js.array
-      (Array.of_list
-         (List.map Js.number_of_float [ x1; y1; x2; y2; x3; y3; x4; y4 ]))
-  in
-  let texc_array =
-    Js.array
-      (Array.of_list
-         (List.map Js.number_of_float
-            [ cx1; cy1; cx2; cy2; cx3; cy3; cx4; cy4 ]))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "textureCropped"));
-      ("texture", Js.Unsafe.inject (Js.string name));
-      ("pos", Js.Unsafe.inject pos_array);
-      ("texc", Js.Unsafe.inject texc_array);
-      ("alpha", Js.Unsafe.inject (Js.number_of_float alpha));
+      num "_c" 0.0;
+      str "_p" "textureCropped";
+      str "texture" name;
+      nums "pos" [ x1; y1; x2; y2; x3; y3; x4; y4 ];
+      nums "texc" [ cx1; cy1; cx2; cy2; cx3; cy3; cx4; cy4 ];
+      num "alpha" alpha;
     ]
 
 let rec rect_texture_with_alpha (x, y) (w, h) alpha name =
@@ -385,68 +261,48 @@ let rec rect_texture_with_alpha (x, y) (w, h) alpha name =
     (w, h) 0.0 alpha name
 
 and centered_texture_with_alpha (x, y) (w, h) angle alpha name =
-  let posize_array =
-    Js.array (Array.of_list (List.map Js.number_of_float [ x; y; w; h ]))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "centeredTexture"));
-      ("texture", Js.Unsafe.inject (Js.string name));
-      ("posize", Js.Unsafe.inject posize_array);
-      ("angle", Js.Unsafe.inject (Js.number_of_float angle));
-      ("alpha", Js.Unsafe.inject (Js.number_of_float alpha));
+      num "_c" 0.0;
+      str "_p" "centeredTexture";
+      str "texture" name;
+      nums "posize" [ x; y; w; h ];
+      num "angle" angle;
+      num "alpha" alpha;
     ]
 
 let rect_texture_cropped_with_alpha (x, y) (w, h) (cx, cy) (cw, ch) alpha name =
-  let pos_array =
-    Js.array
-      (Array.of_list
-         (List.map Js.number_of_float
-            [ x; y; x +. w; y; x +. w; y +. h; x; y +. h ]))
-  in
-  let texc_array =
-    Js.array
-      (Array.of_list
-         (List.map Js.number_of_float
-            [
-              cx;
-              1.0 -. cy;
-              cx +. cw;
-              1.0 -. cy;
-              cx +. cw;
-              1.0 -. cy -. ch;
-              cx;
-              1.0 -. cy -. ch;
-            ]))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "textureCropped"));
-      ("texture", Js.Unsafe.inject (Js.string name));
-      ("pos", Js.Unsafe.inject pos_array);
-      ("texc", Js.Unsafe.inject texc_array);
-      ("alpha", Js.Unsafe.inject (Js.number_of_float alpha));
+      num "_c" 0.0;
+      str "_p" "textureCropped";
+      str "texture" name;
+      nums "pos" [ x; y; x +. w; y; x +. w; y +. h; x; y +. h ];
+      nums "texc"
+        [
+          cx;
+          1.0 -. cy;
+          cx +. cw;
+          1.0 -. cy;
+          cx +. cw;
+          1.0 -. cy -. ch;
+          cx;
+          1.0 -. cy -. ch;
+        ];
+      num "alpha" alpha;
     ]
 
 let centered_texture_cropped_with_alpha (x, y) (w, h) angle (cx, cy) (cw, ch)
     alpha name =
-  let posize_array =
-    Js.array (Array.of_list (List.map Js.number_of_float [ x; y; w; h ]))
-  in
-  let texc_array =
-    Js.array (Array.of_list (List.map Js.number_of_float [ cx; cy; cw; ch ]))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "centeredCroppedTexture"));
-      ("texture", Js.Unsafe.inject (Js.string name));
-      ("posize", Js.Unsafe.inject posize_array);
-      ("angle", Js.Unsafe.inject (Js.number_of_float angle));
-      ("texc", Js.Unsafe.inject texc_array);
-      ("alpha", Js.Unsafe.inject (Js.number_of_float alpha));
+      num "_c" 0.0;
+      str "_p" "centeredCroppedTexture";
+      str "texture" name;
+      nums "posize" [ x; y; w; h ];
+      num "angle" angle;
+      nums "texc" [ cx; cy; cw; ch ];
+      num "alpha" alpha;
     ]
 
 type textbox_option = {
@@ -486,135 +342,83 @@ let default_textbox_option =
 
 let textbox (x, y) size text font color =
   let rgba_list = to_rgba_list color in
-  let offset_array =
-    Js.array (Array.of_list (List.map Js.number_of_float [ x; y ]))
-  in
-  let color_array =
-    Js.array (Array.of_list (List.map Js.number_of_float rgba_list))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "textbox"));
-      ("text", Js.Unsafe.inject (Js.string text));
-      ("size", Js.Unsafe.inject (Js.number_of_float size));
-      ("offset", Js.Unsafe.inject offset_array);
-      ("font", Js.Unsafe.inject (Js.string font));
-      ("color", Js.Unsafe.inject color_array);
+      num "_c" 0.0;
+      str "_p" "textbox";
+      str "text" text;
+      num "size" size;
+      nums "offset" [ x; y ];
+      str "font" font;
+      nums "color" rgba_list;
     ]
 
 let textbox_mf (x, y) size text fonts color =
   let rgba_list = to_rgba_list color in
-  let offset_array =
-    Js.array (Array.of_list (List.map Js.number_of_float [ x; y ]))
-  in
-  let fonts_array = Js.array (Array.of_list (List.map Js.string fonts)) in
-  let color_array =
-    Js.array (Array.of_list (List.map Js.number_of_float rgba_list))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "textbox"));
-      ("text", Js.Unsafe.inject (Js.string text));
-      ("size", Js.Unsafe.inject (Js.number_of_float size));
-      ("offset", Js.Unsafe.inject offset_array);
-      ("fonts", Js.Unsafe.inject fonts_array);
-      ("color", Js.Unsafe.inject color_array);
+      num "_c" 0.0;
+      str "_p" "textbox";
+      str "text" text;
+      num "size" size;
+      nums "offset" [ x; y ];
+      strs "fonts" fonts;
+      nums "color" rgba_list;
     ]
 
 let textbox_centered (x, y) size text font color =
   let rgba_list = to_rgba_list color in
-  let offset_array =
-    Js.array (Array.of_list (List.map Js.number_of_float [ x; y ]))
-  in
-  let color_array =
-    Js.array (Array.of_list (List.map Js.number_of_float rgba_list))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "textbox"));
-      ("text", Js.Unsafe.inject (Js.string text));
-      ("size", Js.Unsafe.inject (Js.number_of_float size));
-      ("offset", Js.Unsafe.inject offset_array);
-      ("font", Js.Unsafe.inject (Js.string font));
-      ("color", Js.Unsafe.inject color_array);
-      ("align", Js.Unsafe.inject (Js.string "center"));
-      ("valign", Js.Unsafe.inject (Js.string "center"));
+      num "_c" 0.0;
+      str "_p" "textbox";
+      str "text" text;
+      num "size" size;
+      nums "offset" [ x; y ];
+      str "font" font;
+      nums "color" rgba_list;
+      str "align" "center";
+      str "valign" "center";
     ]
 
 let textbox_mf_centered (x, y) size text fonts color =
   let rgba_list = to_rgba_list color in
-  let offset_array =
-    Js.array (Array.of_list (List.map Js.number_of_float [ x; y ]))
-  in
-  let fonts_array = Js.array (Array.of_list (List.map Js.string fonts)) in
-  let color_array =
-    Js.array (Array.of_list (List.map Js.number_of_float rgba_list))
-  in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "textbox"));
-      ("text", Js.Unsafe.inject (Js.string text));
-      ("size", Js.Unsafe.inject (Js.number_of_float size));
-      ("offset", Js.Unsafe.inject offset_array);
-      ("fonts", Js.Unsafe.inject fonts_array);
-      ("color", Js.Unsafe.inject color_array);
-      ("align", Js.Unsafe.inject (Js.string "center"));
-      ("valign", Js.Unsafe.inject (Js.string "center"));
+      num "_c" 0.0;
+      str "_p" "textbox";
+      str "text" text;
+      num "size" size;
+      nums "offset" [ x; y ];
+      strs "fonts" fonts;
+      nums "color" rgba_list;
+      str "align" "center";
+      str "valign" "center";
     ]
 
 let textbox_pro (x, y) opt =
   let rgba_list = to_rgba_list opt.color in
-  let offset_array =
-    Js.array (Array.of_list (List.map Js.number_of_float [ x; y ]))
-  in
-  let fonts_array = Js.array (Array.of_list (List.map Js.string opt.fonts)) in
-  let color_array =
-    Js.array (Array.of_list (List.map Js.number_of_float rgba_list))
-  in
   let get_with_default default = function Some x -> x | None -> default in
-  gen_prog
+  atomic
     [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 0.0));
-      ("_p", Js.Unsafe.inject (Js.string "textbox"));
-      ("text", Js.Unsafe.inject (Js.string opt.text));
-      ("size", Js.Unsafe.inject (Js.number_of_float opt.size));
-      ("offset", Js.Unsafe.inject offset_array);
-      ("fonts", Js.Unsafe.inject fonts_array);
-      ("color", Js.Unsafe.inject color_array);
-      ("wordBreak", Js.Unsafe.inject (Js.bool opt.word_break));
-      ("align", Js.Unsafe.inject (Js.string (get_with_default "left" opt.align)));
-      ( "valign",
-        Js.Unsafe.inject (Js.string (get_with_default "top" opt.valign)) );
-      ( "width",
-        Js.Unsafe.inject
-          (Js.number_of_float (get_with_default (-1.0) opt.width)) );
-      ( "lineHeight",
-        Js.Unsafe.inject
-          (Js.number_of_float (get_with_default 1.0 opt.line_height)) );
-      ( "wordSpacing",
-        Js.Unsafe.inject
-          (Js.number_of_float (get_with_default 1.0 opt.word_spacing)) );
-      ( "letterSpacing",
-        Js.Unsafe.inject
-          (Js.number_of_float (get_with_default 0.0 opt.letter_spacing)) );
-      ( "tabSize",
-        Js.Unsafe.inject
-          (Js.number_of_float (get_with_default 4.0 opt.tab_size)) );
-      ( "thickness",
-        Js.Unsafe.inject
-          (Js.number_of_float (get_with_default 0.0 opt.thickness)) );
-      ( "it",
-        Js.Unsafe.inject (Js.number_of_float (get_with_default 0.0 opt.italic))
-      );
+      num "_c" 0.0;
+      str "_p" "textbox";
+      str "text" opt.text;
+      num "size" opt.size;
+      nums "offset" [ x; y ];
+      strs "fonts" opt.fonts;
+      nums "color" rgba_list;
+      bool "wordBreak" opt.word_break;
+      str "align" (get_with_default "left" opt.align);
+      str "valign" (get_with_default "top" opt.valign);
+      num "width" (get_with_default (-1.0) opt.width);
+      num "lineHeight" (get_with_default 1.0 opt.line_height);
+      num "wordSpacing" (get_with_default 1.0 opt.word_spacing);
+      num "letterSpacing" (get_with_default 0.0 opt.letter_spacing);
+      num "tabSize" (get_with_default 4.0 opt.tab_size);
+      num "thickness" (get_with_default 0.0 opt.thickness);
+      num "it" (get_with_default 0.0 opt.italic);
     ]
 
 let save_as_texture text =
-  gen_prog
-    [
-      ("_c", Js.Unsafe.inject (Js.number_of_float 4.0));
-      ("_n", Js.Unsafe.inject (Js.string text));
-    ]
+  atomic [ num "_c" 4.0; str "_n" text ]

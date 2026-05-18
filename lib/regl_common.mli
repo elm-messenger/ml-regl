@@ -1,21 +1,24 @@
 open Js_of_ocaml
 
-type program_call = (string * Js.Unsafe.any) list
-type regl_effect = program_call
 type camera = { x : float; y : float; zoom : float; rotation : float }
+module Render_pb = Transport_render.Mlregl.Transport.Render
 
-type renderable =
-  | AtomicRenderable of program_call
-  | GroupRenderable of regl_effect list * renderable list
-  | GroupRenderableWithCamera of camera * regl_effect list * renderable list
+type program_call = Render_pb.ProgramCallField.t list
+type regl_effect = Render_pb.Effect.t
+type renderable = Render_pb.Renderable.t
 
-val render : renderable -> Js.Unsafe.any
+val num : string -> float -> Render_pb.ProgramCallField.t
+val str : string -> string -> Render_pb.ProgramCallField.t
+val bool : string -> bool -> Render_pb.ProgramCallField.t
+val nums : string -> float list -> Render_pb.ProgramCallField.t
+val strs : string -> string list -> Render_pb.ProgramCallField.t
+val bytes : string -> bytes -> Render_pb.ProgramCallField.t
+val renderable_bytes : string -> renderable -> Render_pb.ProgramCallField.t
+
+val encode_frame_pb : renderable -> bytes
+val atomic : program_call -> renderable
+val mk_effect : program_call -> regl_effect
 val group : regl_effect list -> renderable list -> renderable
-
 val group_with_camera :
   camera -> regl_effect list -> renderable list -> renderable
-
-val update_field : string -> Js.Unsafe.any -> renderable -> renderable
-val get_field : string -> renderable -> Js.Unsafe.any option
-val gen_prog : program_call -> renderable
 val to_rgba_list : Color.t -> float list

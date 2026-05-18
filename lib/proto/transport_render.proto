@@ -6,6 +6,10 @@ message ScalarArray {
   repeated double values = 1 [packed = true];
 }
 
+message StringArray {
+  repeated string values = 1;
+}
+
 message Camera {
   double x = 1;
   double y = 2;
@@ -20,6 +24,8 @@ message ProgramCallField {
     string string_value = 3;
     ScalarArray number_array_value = 4;
     bytes binary_value = 5;
+    bool bool_value = 6;
+    StringArray string_array_value = 7;
   }
 }
 
@@ -29,12 +35,6 @@ message AtomicRenderable {
 
 message Effect {
   repeated ProgramCallField fields = 1;
-}
-
-message CompositeRenderable {
-  AtomicRenderable compositor = 1;
-  Renderable left = 2;
-  Renderable right = 3;
 }
 
 message GroupRenderable {
@@ -47,7 +47,6 @@ message Renderable {
   oneof kind {
     AtomicRenderable atomic = 1;
     GroupRenderable group = 2;
-    CompositeRenderable composite = 3;
   }
 }
 

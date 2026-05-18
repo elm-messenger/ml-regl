@@ -1,53 +1,28 @@
-open Js_of_ocaml
 open Regl_common
 
 let rec blur radius = [ blur_h radius; blur_v radius ]
 
 and blur_h radius =
-  [
-    ("_p", Js.Unsafe.inject (Js.string "blurh"));
-    ("radius", Js.Unsafe.inject (Js.number_of_float radius));
-  ]
+  mk_effect [ str "_p" "blurh"; num "radius" radius ]
 
 and blur_v radius =
-  [
-    ("_p", Js.Unsafe.inject (Js.string "blurv"));
-    ("radius", Js.Unsafe.inject (Js.number_of_float radius));
-  ]
+  mk_effect [ str "_p" "blurv"; num "radius" radius ]
 
 let alpha_mult a =
-  [
-    ("_p", Js.Unsafe.inject (Js.string "alphamult"));
-    ("alpha", Js.Unsafe.inject (Js.number_of_float a));
-  ]
+  mk_effect [ str "_p" "alphamult"; num "alpha" a ]
 
 let color_mult r g b a =
-  let color_array =
-    Js.array (Array.of_list (List.map Js.number_of_float [ r; g; b; a ]))
-  in
-  [
-    ("_p", Js.Unsafe.inject (Js.string "colormult"));
-    ("color", Js.Unsafe.inject color_array);
-  ]
+  mk_effect [ str "_p" "colormult"; nums "color" [ r; g; b; a ] ]
 
 let pixilation ps =
-  [
-    ("_p", Js.Unsafe.inject (Js.string "pixilation"));
-    ("ps", Js.Unsafe.inject (Js.number_of_float ps));
-  ]
+  mk_effect [ str "_p" "pixilation"; num "ps" ps ]
 
 let outline o color =
   let rgba_list = to_rgba_list color in
-  let color_array =
-    Js.array (Array.of_list (List.map Js.number_of_float rgba_list))
-  in
-  [
-    ("_p", Js.Unsafe.inject (Js.string "outline"));
-    ("outline", Js.Unsafe.inject (Js.number_of_float o));
-    ("color", Js.Unsafe.inject color_array);
-  ]
+  mk_effect
+    [ str "_p" "outline"; num "outline" o; nums "color" rgba_list ]
 
-let fxaa = [ ("_p", Js.Unsafe.inject (Js.string "fxaa")) ]
+let fxaa = mk_effect [ str "_p" "fxaa" ]
 
 let rec gblur radius =
   [
@@ -62,19 +37,10 @@ let rec gblur radius =
   ]
 
 and gblur_h r =
-  [
-    ("_p", Js.Unsafe.inject (Js.string "gblurh"));
-    ("radius", Js.Unsafe.inject (Js.number_of_float r));
-  ]
+  mk_effect [ str "_p" "gblurh"; num "radius" r ]
 
 and gblur_v r =
-  [
-    ("_p", Js.Unsafe.inject (Js.string "gblurv"));
-    ("radius", Js.Unsafe.inject (Js.number_of_float r));
-  ]
+  mk_effect [ str "_p" "gblurv"; num "radius" r ]
 
 let crt count =
-  [
-    ("_p", Js.Unsafe.inject (Js.string "crt"));
-    ("count", Js.Unsafe.inject (Js.number_of_float count));
-  ]
+  mk_effect [ str "_p" "crt"; num "count" count ]
