@@ -75,3 +75,25 @@ message BackendCommand {
 message BackendCommandBatch {
   repeated BackendCommand commands = 1;
 }
+
+message TextureLoaded {
+  string name = 1;
+  uint32 width = 2;
+  uint32 height = 3;
+}
+
+message FontLoaded {
+  string name = 1;
+}
+
+message ProgramCreated {
+  string name = 1;
+}
+
+message BackendEvent {
+  oneof kind {
+    TextureLoaded texture_loaded = 1;
+    FontLoaded font_loaded = 2;
+    ProgramCreated program_created = 3;
+  }
+}
