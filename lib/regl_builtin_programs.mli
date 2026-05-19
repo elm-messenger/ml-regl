@@ -169,4 +169,3 @@ val textbox_mf_centered :
   float * float -> float -> string -> string list -> Color.t -> renderable
 
 val textbox_pro : float * float -> textbox_option -> renderable
-val save_as_texture : string -> renderable

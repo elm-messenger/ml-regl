@@ -1,41 +1,37 @@
-open Js_of_ocaml
-
 type camera = { x : float; y : float; zoom : float; rotation : float }
 module Render_pb = Transport_render.Mlregl.Transport.Render
+module Common_pb = Transport_common.Mlregl.Transport.Common
 
 type program_call = Render_pb.ProgramCallField.t list
 type regl_effect = Render_pb.Effect.t
 type renderable = Render_pb.Renderable.t
 
+let field key v = Render_pb.ProgramCallField.make ~key ~val':v ()
+
 let num key v =
-  Render_pb.ProgramCallField.make ~key ~value:(`Number_value v) ()
+  field key (Common_pb.Value.make ~kind:(`Number_value v) ())
 
 let str key v =
-  Render_pb.ProgramCallField.make ~key ~value:(`String_value v) ()
+  field key (Common_pb.Value.make ~kind:(`String_value v) ())
 
 let bool key v =
-  Render_pb.ProgramCallField.make ~key ~value:(`Bool_value v) ()
+  field key (Common_pb.Value.make ~kind:(`Bool_value v) ())
 
 let nums key values =
-  let number_array_value = Render_pb.ScalarArray.make ~values () in
-  Render_pb.ProgramCallField.make ~key ~value:(`Number_array_value number_array_value)
-    ()
+  let number_array_value = Common_pb.ScalarArray.make ~values () in
+  field key (Common_pb.Value.make ~kind:(`Number_array_value number_array_value) ())
 
 let strs key values =
-  let string_array_value = Render_pb.StringArray.make ~values () in
-  Render_pb.ProgramCallField.make ~key ~value:(`String_array_value string_array_value)
-    ()
+  let string_array_value = Common_pb.StringArray.make ~values () in
+  field key (Common_pb.Value.make ~kind:(`String_array_value string_array_value) ())
 
-let renderable key r =
-  Render_pb.ProgramCallField.make ~key ~value:(`Renderable_value r) ()
-
-let atomic (pc : program_call) : renderable =
+let atomic (program : string) (pc : program_call) : renderable =
   Render_pb.Renderable.make
-    ~kind:(`Atomic (Render_pb.AtomicRenderable.make ~fields:pc ()))
+    ~kind:(`Atomic (Render_pb.AtomicRenderable.make ~fields:pc ~program ()))
     ()
 
-let mk_effect (pc : program_call) : regl_effect =
-  Render_pb.Effect.make ~fields:pc ()
+let mk_effect (program : string) (pc : program_call) : regl_effect =
+  Render_pb.Effect.make ~fields:pc ~program ()
 
 let group effects children =
   Render_pb.Renderable.make
@@ -51,16 +47,16 @@ let group_with_camera camera effects children =
     ~kind:(`Group (Render_pb.GroupRenderable.make ~effects ~children ~camera ()))
     ()
 
-let composite (pc : program_call) (left : renderable) (right : renderable) :
+let composite (program : string) (pc : program_call) (left : renderable)
+    (right : renderable) :
     renderable =
-  let compositor = Render_pb.AtomicRenderable.make ~fields:pc () in
+  let compositor = Render_pb.AtomicRenderable.make ~fields:pc ~program () in
   Render_pb.Renderable.make
     ~kind:(`Composite (Render_pb.CompositeRenderable.make ~compositor ~left ~right ()))
     ()
 
 let encode_frame_pb (r : renderable) : bytes =
-  Render_pb.RenderFrame.make ~root:r ()
-  |> Render_pb.RenderFrame.to_proto
+  Render_pb.Renderable.to_proto r
   |> Ocaml_protoc_plugin.Writer.contents
   |> Bytes.unsafe_of_string
 
