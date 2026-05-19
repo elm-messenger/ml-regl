@@ -26,14 +26,8 @@ let strs key values =
   Render_pb.ProgramCallField.make ~key ~value:(`String_array_value string_array_value)
     ()
 
-let bytes key v =
-  Render_pb.ProgramCallField.make ~key ~value:(`Binary_value v) ()
-
-let renderable_to_bytes (r : renderable) : bytes =
-  Render_pb.Renderable.to_proto r |> Ocaml_protoc_plugin.Writer.contents
-  |> Bytes.unsafe_of_string
-
-let renderable_bytes key r = bytes key (renderable_to_bytes r)
+let renderable key r =
+  Render_pb.ProgramCallField.make ~key ~value:(`Renderable_value r) ()
 
 let atomic (pc : program_call) : renderable =
   Render_pb.Renderable.make
@@ -55,6 +49,13 @@ let group_with_camera camera effects children =
   in
   Render_pb.Renderable.make
     ~kind:(`Group (Render_pb.GroupRenderable.make ~effects ~children ~camera ()))
+    ()
+
+let composite (pc : program_call) (left : renderable) (right : renderable) :
+    renderable =
+  let compositor = Render_pb.AtomicRenderable.make ~fields:pc () in
+  Render_pb.Renderable.make
+    ~kind:(`Composite (Render_pb.CompositeRenderable.make ~compositor ~left ~right ()))
     ()
 
 let encode_frame_pb (r : renderable) : bytes =

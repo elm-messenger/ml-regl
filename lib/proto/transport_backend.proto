@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package mlregl.transport.backend;
 
+import "transport_common.proto";
+
 message TextureCrop {
   int32 x = 1;
   int32 y = 2;
@@ -52,13 +54,28 @@ message StartRegl {
   repeated string builtin_programs = 4;
 }
 
-message CreateProgram {
-  string name = 1;
-  bytes encoded_program = 2;
+message ProgramValueMapping {
+  string key = 4; // Key used in GL Program
+  oneof val {
+    string dyn_val = 1;
+    common.Value static_val = 2;
+    string dyn_textval = 3;
+  }
 }
 
-message LoadAudio {
-  string audio_url = 1;
+message Program {
+  string frag = 1;
+  string vert = 2;
+  repeated ProgramValueMapping uniforms = 3;
+  repeated ProgramValueMapping attributes = 4;
+  ProgramValueMapping primitive = 5;
+  ProgramValueMapping elements = 6;
+  ProgramValueMapping count = 7;
+}
+
+message CreateProgram {
+  string name = 1;
+  Program program = 2;
 }
 
 message BackendCommand {
@@ -68,7 +85,6 @@ message BackendCommand {
     ReglConfig config_regl = 3;
     StartRegl start_regl = 4;
     CreateProgram create_program = 5;
-    LoadAudio load_audio = 6;
   }
 }
 

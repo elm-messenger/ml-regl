@@ -12,8 +12,7 @@ val str : string -> string -> Render_pb.ProgramCallField.t
 val bool : string -> bool -> Render_pb.ProgramCallField.t
 val nums : string -> float list -> Render_pb.ProgramCallField.t
 val strs : string -> string list -> Render_pb.ProgramCallField.t
-val bytes : string -> bytes -> Render_pb.ProgramCallField.t
-val renderable_bytes : string -> renderable -> Render_pb.ProgramCallField.t
+val renderable : string -> renderable -> Render_pb.ProgramCallField.t
 
 val encode_frame_pb : renderable -> bytes
 val atomic : program_call -> renderable
@@ -21,4 +20,5 @@ val mk_effect : program_call -> regl_effect
 val group : regl_effect list -> renderable list -> renderable
 val group_with_camera :
   camera -> regl_effect list -> renderable list -> renderable
+val composite : program_call -> renderable -> renderable -> renderable
 val to_rgba_list : Color.t -> float list
