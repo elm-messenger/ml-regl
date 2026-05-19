@@ -54,8 +54,7 @@ message StartRegl {
   repeated string builtin_programs = 4;
 }
 
-message ProgramValueMapping {
-  string key = 4; // Key used in GL Program
+message ProgramValue {
   oneof val {
     string dyn_val = 1;
     common.Value static_val = 2;
@@ -63,14 +62,19 @@ message ProgramValueMapping {
   }
 }
 
+message ProgramValueMapping {
+  string key = 4; // Key used in GL Program
+  ProgramValue val = 5;
+}
+
 message Program {
   string frag = 1;
   string vert = 2;
   repeated ProgramValueMapping uniforms = 3;
   repeated ProgramValueMapping attributes = 4;
-  ProgramValueMapping primitive = 5;
-  ProgramValueMapping elements = 6;
-  ProgramValueMapping count = 7;
+  ProgramValue primitive = 5;
+  ProgramValue elements = 6;
+  ProgramValue count = 7;
 }
 
 message CreateProgram {

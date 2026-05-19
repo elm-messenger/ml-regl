@@ -419,6 +419,3 @@ let textbox_pro (x, y) opt =
       num "thickness" (get_with_default 0.0 opt.thickness);
       num "it" (get_with_default 0.0 opt.italic);
     ]
-
-let save_as_texture text =
-  atomic [ num "_c" 4.0; str "_n" text ]

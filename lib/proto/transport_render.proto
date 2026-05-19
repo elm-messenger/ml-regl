@@ -46,7 +46,3 @@ message Renderable {
     CompositeRenderable composite = 3;
   }
 }
-
-message RenderFrame {
-  Renderable root = 1;
-}
