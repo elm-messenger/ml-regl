@@ -32,15 +32,7 @@ type regl_recv_msg =
   | REGLFontLoaded of string
   | REGLProgramCreated of string
 
-val load_texture : string -> string -> texture_options option -> Js.Unsafe.any
-val start_regl : regl_start_config -> Js.Unsafe.any
-val create_regl_program : string -> Regl_program.regl_program -> Js.Unsafe.any
-val config_regl : regl_config -> Js.Unsafe.any
-val load_msdf_font : string -> string -> string -> Js.Unsafe.any
-val decode_recv_msg : Js.Unsafe.any -> regl_recv_msg option
-val execCmd : Js.Unsafe.any -> unit
-
-val load_audio : string -> unit
+module Backend_pb = Transport_backend.Mlregl.Transport.Backend
 
 type audio_recv_msg =
   | AudioLoadSuccess of { audio_url : string; source : Regl_audio.source }
@@ -53,18 +45,20 @@ type regl_input =
   | REGLRecvMsg of regl_recv_msg
   | AudioMsg of audio_recv_msg
 
-type regl_output =
-  | LoadFont of string * string * string
-  | LoadTexture of string * string * texture_options option
-  | StartREGL of regl_start_config
-  | CreateREGLProgram of string * Regl_program.regl_program
-  | ConfigREGL of regl_config
-  | LoadAudio of string
+type regl_output = Backend_pb.BackendCommand.t
+
+val load_texture : string -> string -> texture_options option -> regl_output
+val load_font : string -> string -> string -> regl_output
+val start_regl : regl_start_config -> regl_output
+val create_regl_program : string -> Regl_program.regl_program -> regl_output
+val config_regl : regl_config -> regl_output
+val load_audio : string -> regl_output
 
 val create_app :
-  (Dom_html.canvasElement Js.t option -> Js.Unsafe.any -> 'a) ->
+  (Dom_html.canvasElement Js.t option -> 'a * regl_output list) ->
   (Dom_html.canvasElement Js.t option ->
   'a ->
   regl_input ->
-  'a * Regl_common.renderable * Regl_audio.audio * regl_output list) ->
+  'a * Regl_audio.audio * regl_output list) ->
+  ('a -> Regl_common.renderable) ->
   unit

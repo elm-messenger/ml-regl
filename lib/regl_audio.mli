@@ -63,8 +63,8 @@ val diff_actions : prev_state -> audio -> prev_state * audio_action list
 (** [diff_actions prev new_audio] produces an updated state and typed audio
     actions describing how the backend should be updated. *)
 
-val encode_command_batch_pb : audio_action list -> string list -> bytes
-(** Encode an audio action/load batch into protobuf wire format. *)
+val encode_command_batch_pb : audio_action list -> bytes
+(** Encode an audio action batch into protobuf wire format. *)
 
 (** Decode an incoming message from the JS audio runtime. Returns [None] for
     messages that aren't audio-related or are malformed. *)

@@ -32,143 +32,6 @@ type regl_recv_msg =
   | REGLFontLoaded of string
   | REGLProgramCreated of string
 
-let encode_config config =
-  let interval =
-    match config.time_interval with
-    | AnimationFrame -> -1.0
-    | Millisecond ms -> ms
-  in
-  Js.Unsafe.obj [| ("interval", Js.Unsafe.inject interval) |]
-
-let encode_texture_options topts =
-  match topts with
-  | Some opts ->
-      let mag_str =
-        match opts.mag with
-        | Some MagNearest -> "nearest"
-        | Some MagLinear -> "linear"
-        | None -> "linear"
-      in
-      let min_str =
-        match opts.min with
-        | Some MinNearest -> "nearest"
-        | Some MinLinear -> "linear"
-        | Some NearestMipmapNearest -> "nearest mipmap nearest"
-        | Some LinearMipmapNearest -> "linear mipmap nearest"
-        | Some NearestMipmapLinear -> "nearest mipmap linear"
-        | Some LinearMipmapLinear -> "linear mipmap linear"
-        | None -> "linear"
-      in
-      let subimg =
-        match opts.crop with
-        | Some ((x, y), (w, h)) ->
-            let arr = [| x; y; w; h |] in
-            Js.Unsafe.inject
-              (Js.array
-                 (Array.map (fun i -> Js.number_of_float (float_of_int i)) arr))
-        | None -> Js.Unsafe.inject Js.null
-      in
-      [
-        ("mag", Js.Unsafe.inject (Js.string mag_str));
-        ("min", Js.Unsafe.inject (Js.string min_str));
-        ("subimg", subimg);
-      ]
-  | None ->
-      [
-        ("mag", Js.Unsafe.inject (Js.string "linear"));
-        ("min", Js.Unsafe.inject (Js.string "linear"));
-      ]
-
-let load_texture name url topts =
-  let opts_list =
-    ("data", Js.Unsafe.inject (Js.string url)) :: encode_texture_options topts
-  in
-  let opts_obj = Js.Unsafe.obj (Array.of_list opts_list) in
-  Js.Unsafe.obj
-    [|
-      ("_c", Js.Unsafe.inject (Js.string "loadTexture"));
-      ("_n", Js.Unsafe.inject (Js.string name));
-      ("opts", Js.Unsafe.inject opts_obj);
-    |]
-
-let start_regl config =
-  match config.builtin_programs with
-  | Some progs ->
-      let progs_array = Js.array (Array.of_list (List.map Js.string progs)) in
-      Js.Unsafe.obj
-        [|
-          ("_c", Js.Unsafe.inject (Js.string "start"));
-          ("virtWidth", Js.Unsafe.inject config.virt_width);
-          ("virtHeight", Js.Unsafe.inject config.virt_height);
-          ("fboNum", Js.Unsafe.inject config.fbo_num);
-          ("programs", Js.Unsafe.inject progs_array);
-        |]
-  | None ->
-      Js.Unsafe.obj
-        [|
-          ("_c", Js.Unsafe.inject (Js.string "start"));
-          ("virtWidth", Js.Unsafe.inject config.virt_width);
-          ("virtHeight", Js.Unsafe.inject config.virt_height);
-          ("fboNum", Js.Unsafe.inject config.fbo_num);
-        |]
-
-let create_regl_program name program =
-  Js.Unsafe.obj
-    [|
-      ("_c", Js.Unsafe.inject (Js.string "createGLProgram"));
-      ("_n", Js.Unsafe.inject (Js.string name));
-      ("proto", Js.Unsafe.inject (Regl_program.encode_program program));
-    |]
-
-let config_regl config =
-  Js.Unsafe.obj
-    [|
-      ("_c", Js.Unsafe.inject (Js.string "config"));
-      ("config", Js.Unsafe.inject (encode_config config));
-    |]
-
-let load_msdf_font name imgurl jsonurl =
-  Js.Unsafe.obj
-    [|
-      ("_c", Js.Unsafe.inject (Js.string "loadFont"));
-      ("_n", Js.Unsafe.inject (Js.string name));
-      ("img", Js.Unsafe.inject (Js.string imgurl));
-      ("json", Js.Unsafe.inject (Js.string jsonurl));
-    |]
-
-let decode_recv_msg v =
-  let get_string o key =
-    try Some (Js.to_string (Js.Unsafe.get o (Js.string key))) with _ -> None
-  in
-  let get_int o key =
-    try
-      Some
-        (int_of_float (Js.float_of_number (Js.Unsafe.get o (Js.string key))))
-    with _ -> None
-  in
-  match get_string v "_c" with
-  | Some "loadTexture" -> (
-      let r = Js.Unsafe.get v (Js.string "response") in
-      match (get_int r "width", get_int r "height", get_string r "texture") with
-      | Some w, Some h, Some txtname ->
-          Some (REGLTextureLoaded { name = txtname; width = w; height = h })
-      | _ -> None)
-  | Some "loadFont" -> (
-      let r = Js.Unsafe.get v (Js.string "response") in
-      match get_string r "font" with
-      | Some name -> Some (REGLFontLoaded name)
-      | None -> None)
-  | Some "createGLProgram" -> (
-      let r = Js.Unsafe.get v (Js.string "response") in
-      match get_string r "_n" with
-      | Some name -> Some (REGLProgramCreated name)
-      | None -> None)
-  | _ -> None
-
-let execCmd x =
-  let mlregl = Js.Unsafe.global##.MlREGL in
-  mlregl##execCmd x
-
 module Backend_pb = Transport_backend.Mlregl.Transport.Backend
 
 let backend_mag = function
@@ -208,6 +71,11 @@ let backend_texture_options = function
       in
       Some (Backend_pb.TextureOptions.make ~mag ~min ?crop ())
 
+let backend_create_program name program =
+  Backend_pb.CreateProgram.make ~name
+    ~program:(Regl_program.encode_program_pb program)
+    ()
+
 let encode_backend_command_batch_pb (commands : Backend_pb.BackendCommand.t list)
     : bytes =
   Backend_pb.BackendCommandBatch.to_proto commands
@@ -232,14 +100,12 @@ let decode_backend_event_pb (payload : bytes) : regl_recv_msg option =
     | `not_set -> None
   with _ -> None
 
-let execAudioCmdPb actions loads =
+let execAudioCmdPb actions =
   let mlregl = Js.Unsafe.global##.MlREGL in
-  let payload = Regl_audio.encode_command_batch_pb actions loads in
+  let payload = Regl_audio.encode_command_batch_pb actions in
   let bytes = Regl_transport.uint8array_of_bytes payload in
   Js.Unsafe.fun_call (Js.Unsafe.get mlregl "execAudioCmdPb")
     [| Js.Unsafe.inject bytes |]
-
-let load_audio url = execAudioCmdPb [] [ url ]
 
 type audio_recv_msg =
   | AudioLoadSuccess of { audio_url : string; source : Regl_audio.source }
@@ -252,93 +118,91 @@ type regl_input =
   | REGLRecvMsg of regl_recv_msg
   | AudioMsg of audio_recv_msg
 
-type regl_output =
-  | LoadFont of string * string * string
-  | LoadTexture of string * string * texture_options option
-  | StartREGL of regl_start_config
-  | CreateREGLProgram of string * Regl_program.regl_program
-  | ConfigREGL of regl_config
-  | LoadAudio of string
+type regl_output = Backend_pb.BackendCommand.t
+
+let load_texture name url options =
+  Backend_pb.BackendCommand.make
+    ~kind:(`Load_texture (Backend_pb.LoadTexture.make ~name ~url ?options:(backend_texture_options options) ()))
+    ()
+
+let load_font name image_url json_url =
+  Backend_pb.BackendCommand.make
+    ~kind:(`Load_font (Backend_pb.LoadFont.make ~name ~image_url ~json_url ()))
+    ()
+
+let start_regl cfg =
+  Backend_pb.BackendCommand.make
+    ~kind:
+      (`Start_regl
+        (Backend_pb.StartRegl.make ~virt_width:cfg.virt_width
+           ~virt_height:cfg.virt_height ~fbo_num:cfg.fbo_num
+           ~builtin_programs:
+             (match cfg.builtin_programs with None -> [] | Some xs -> xs)
+           ()))
+    ()
+
+let create_regl_program name program =
+  Backend_pb.BackendCommand.make
+    ~kind:(`Create_program (backend_create_program name program))
+    ()
+
+let config_regl cfg =
+  let interval_ms =
+    match cfg.time_interval with
+    | AnimationFrame -> -1.0
+    | Millisecond ms -> ms
+  in
+  Backend_pb.BackendCommand.make
+    ~kind:(`Config_regl (Backend_pb.ReglConfig.make ~interval_ms ()))
+    ()
+
+let load_audio audio_url =
+  Backend_pb.BackendCommand.make
+    ~kind:(`Load_audio (Backend_pb.LoadAudio.make ~audio_url ()))
+    ()
 
 (* Creating the canvas app. Exposing MlApp. *)
 let create_app
-    (init : Dom_html.canvasElement Js.t option -> Js.Unsafe.any -> 'a)
+    (init : Dom_html.canvasElement Js.t option -> 'a * regl_output list)
     (update :
       Dom_html.canvasElement Js.t option ->
       'a ->
       regl_input ->
-      'a * Regl_common.renderable * Regl_audio.audio * regl_output list) =
+      'a * Regl_audio.audio * regl_output list)
+    (view : 'a -> Regl_common.renderable) =
   let canvas : Dom_html.canvasElement Js.t option ref = ref None in
   let model : 'a option ref = ref None in
   let audio_state : Regl_audio.prev_state ref = ref Regl_audio.empty_state in
+  let execute_backend_cmds cmds = if cmds <> [] then execCmdPb cmds in
   let update_model (input : regl_input) =
     match !model with
     | Some m ->
-        let m', rd, audio_tree, outputs = update !canvas m input in
+        let m', audio_tree, outputs = update !canvas m input in
         model := Some m';
-        let pending_loads = ref [] in
-        let pending_backend_cmds = ref [] in
-        List.iter
-          (function
-            | LoadFont (name, imgurl, jsonurl) ->
-                pending_backend_cmds :=
-                  (`Load_font
-                    (Backend_pb.LoadFont.make ~name ~image_url:imgurl
-                       ~json_url:jsonurl ()))
-                  :: !pending_backend_cmds
-            | LoadTexture (name, url, topts) ->
-                pending_backend_cmds :=
-                  (`Load_texture
-                    (Backend_pb.LoadTexture.make ~name ~url
-                       ?options:(backend_texture_options topts)
-                       ()))
-                  :: !pending_backend_cmds
-            | StartREGL cfg ->
-                pending_backend_cmds :=
-                  (`Start_regl
-                    (Backend_pb.StartRegl.make ~virt_width:cfg.virt_width
-                       ~virt_height:cfg.virt_height ~fbo_num:cfg.fbo_num
-                       ~builtin_programs:
-                         (match cfg.builtin_programs with
-                         | None -> []
-                         | Some xs -> xs)
-                       ()))
-                  :: !pending_backend_cmds
-            | CreateREGLProgram (name, prog) ->
-                execCmd (create_regl_program name prog)
-            | ConfigREGL cfg ->
-                let interval_ms =
-                  match cfg.time_interval with
-                  | AnimationFrame -> -1.0
-                  | Millisecond ms -> ms
-                in
-                pending_backend_cmds :=
-                  (`Config_regl (Backend_pb.ReglConfig.make ~interval_ms ()))
-                  :: !pending_backend_cmds
-            | LoadAudio url -> pending_loads := url :: !pending_loads)
-          outputs;
-        if !pending_backend_cmds <> [] then
-          execCmdPb (List.rev !pending_backend_cmds);
+        execute_backend_cmds outputs;
         let new_state, audio_actions = Regl_audio.diff_actions !audio_state audio_tree in
         audio_state := new_state;
-        if audio_actions <> [] || !pending_loads <> [] then
-          execAudioCmdPb audio_actions (List.rev !pending_loads);
-        Js.Unsafe.inject
-          (Regl_transport.uint8array_of_bytes (Regl_common.encode_frame_pb rd))
-    | None -> Js.Unsafe.inject Js.null
+        if audio_actions <> [] then execAudioCmdPb audio_actions
+    | None -> ()
   in
   Js.export "MlApp"
     (Js.Unsafe.obj
        [|
          ("bind", Js.Unsafe.inject (fun c -> canvas := Some c));
-         ("init", Js.Unsafe.inject (fun c -> model := Some (init !canvas c)));
+         ( "init",
+           Js.Unsafe.inject (fun _ ->
+               let m, outputs = init !canvas in
+               model := Some m;
+               execute_backend_cmds outputs) );
          ("update", Js.Unsafe.inject (fun ts -> update_model (Tick ts)));
          ("event", Js.Unsafe.inject (fun ev -> update_model (Event ev)));
-        ( "recvREGLCmd",
-          Js.Unsafe.inject (fun recvcmd ->
-              match decode_recv_msg recvcmd with
-              | Some msg -> update_model (REGLRecvMsg msg)
-              | None -> Js.Unsafe.inject Js.null) );
+         ( "view",
+           Js.Unsafe.inject (fun () ->
+               match !model with
+               | Some m ->
+                   Regl_common.encode_frame_pb (view m)
+                   |> Regl_transport.uint8array_of_bytes |> Js.Unsafe.inject
+               | None -> Js.Unsafe.inject Js.null) );
         ( "recvREGLCmdPb",
           Js.Unsafe.inject (fun recvcmd ->
               let payload =
@@ -347,7 +211,7 @@ let create_app
               in
               match decode_backend_event_pb payload with
               | Some msg -> update_model (REGLRecvMsg msg)
-              | None -> Js.Unsafe.inject Js.null) );
+              | None -> ()) );
         ( "recvAudioMsgPb",
           Js.Unsafe.inject (fun recvmsg ->
               let payload =
@@ -363,5 +227,5 @@ let create_app
                      (AudioMsg (AudioLoadFailed { audio_url; error }))
                | Some (Regl_audio.ContextReady { sample_rate }) ->
                    update_model (AudioMsg (AudioContextReady { sample_rate }))
-               | None -> Js.Unsafe.inject Js.null) );
+               | None -> ()) );
        |])

@@ -1,4 +1,6 @@
 open Js_of_ocaml
+module Backend_pb = Transport_backend.Mlregl.Transport.Backend
+module Common_pb = Transport_common.Mlregl.Transport.Common
 
 type prog_value =
   | DynamicValue of string
@@ -15,92 +17,82 @@ type regl_program = {
   count : prog_value option;
 }
 
-let get_dynamic_value x =
-  let pairs =
-    List.filter_map
-      (fun (k, v) ->
-        match v with
-        | DynamicValue s -> Some (k, Js.Unsafe.inject (Js.string s))
-        | _ -> None)
-      x
-  in
-  Js.Unsafe.obj (Array.of_list pairs)
+let js_typeof x = Js.to_string (Js.typeof x)
 
-let get_dynamic_texture_value x =
-  let pairs =
-    List.filter_map
-      (fun (k, v) ->
-        match v with
-        | DynamicTextureValue s -> Some (k, Js.Unsafe.inject (Js.string s))
-        | _ -> None)
-      x
-  in
-  Js.Unsafe.obj (Array.of_list pairs)
+let js_array_is_array =
+  Js.Unsafe.get (Js.Unsafe.js_expr "Array") "isArray"
 
-let get_static_value x =
-  let pairs =
-    List.filter_map
-      (fun (k, v) -> match v with StaticValue s -> Some (k, s) | _ -> None)
-      x
-  in
-  Js.Unsafe.obj (Array.of_list pairs)
+let is_js_array x =
+  Js.to_bool
+    (Js.Unsafe.fun_call js_array_is_array [| Js.Unsafe.inject x |])
 
-let get_static_single_prog_value = function
-  | StaticValue s -> s
-  | _ -> Js.Unsafe.inject Js.null
+let common_number n = Common_pb.Value.make ~kind:(`Number_value n) ()
+let common_string s = Common_pb.Value.make ~kind:(`String_value s) ()
+let common_bool b = Common_pb.Value.make ~kind:(`Bool_value b) ()
 
-let get_dynamic_single_prog_value = function
-  | DynamicValue s -> Js.Unsafe.inject (Js.string s)
-  | _ -> Js.Unsafe.inject Js.null
+let common_number_array values =
+  let arr = Common_pb.ScalarArray.make ~values () in
+  Common_pb.Value.make ~kind:(`Number_array_value arr) ()
 
-let encode_program_helper p =
-  let float_array vals =
-    Js.array (Array.of_list (List.map Js.number_of_float vals))
-  in
-  let int_array vals =
-    Js.array
-      (Array.of_list
-         (List.map (fun i -> Js.number_of_float (float_of_int i)) vals))
-  in
+let common_string_array values =
+  let arr = Common_pb.StringArray.make ~values () in
+  Common_pb.Value.make ~kind:(`String_array_value arr) ()
 
-  [
-    Some ("frag", Js.Unsafe.inject (Js.string p.frag));
-    Some ("vert", Js.Unsafe.inject (Js.string p.vert));
-    Option.map (fun x -> ("count", get_static_single_prog_value x)) p.count;
-    Option.map (fun x -> ("countDyn", get_dynamic_single_prog_value x)) p.count;
-    Option.map
-      (fun x -> ("elements", get_static_single_prog_value x))
-      p.elements;
-    Option.map
-      (fun x -> ("elementsDyn", get_dynamic_single_prog_value x))
-      p.elements;
-    Option.map
-      (fun x -> ("primitive", get_static_single_prog_value x))
-      p.primitive;
-    Option.map
-      (fun x -> ("primitiveDyn", get_dynamic_single_prog_value x))
-      p.primitive;
-    Option.map
-      (fun x -> ("attributes", Js.Unsafe.inject (get_static_value x)))
-      p.attributes;
-    Option.map
-      (fun x -> ("attributesDyn", Js.Unsafe.inject (get_dynamic_value x)))
-      p.attributes;
-    Option.map
-      (fun x -> ("uniforms", Js.Unsafe.inject (get_static_value x)))
-      p.uniforms;
-    Option.map
-      (fun x -> ("uniformsDyn", Js.Unsafe.inject (get_dynamic_value x)))
-      p.uniforms;
-    Option.map
-      (fun x ->
-        ("uniformsDynTexture", Js.Unsafe.inject (get_dynamic_texture_value x)))
-      p.uniforms;
-  ]
+let static_value_to_common (v : Js.Unsafe.any) : Common_pb.Value.t option =
+  match js_typeof v with
+  | "number" ->
+      Some (common_number (Js.float_of_number (Js.Unsafe.coerce v)))
+  | "string" -> Some (common_string (Js.to_string (Js.Unsafe.coerce v)))
+  | "boolean" -> Some (common_bool (Js.to_bool (Js.Unsafe.coerce v)))
+  | _ when is_js_array v ->
+      let arr = Js.to_array (Js.Unsafe.coerce v) in
+      let values = Array.to_list arr in
+      let rec all_numbers acc = function
+        | [] -> Some (List.rev acc)
+        | x :: rest when js_typeof x = "number" ->
+            all_numbers (Js.float_of_number (Js.Unsafe.coerce x) :: acc) rest
+        | _ -> None
+      in
+      let rec all_strings acc = function
+        | [] -> Some (List.rev acc)
+        | x :: rest when js_typeof x = "string" ->
+            all_strings (Js.to_string (Js.Unsafe.coerce x) :: acc) rest
+        | _ -> None
+      in
+      (match all_numbers [] values with
+      | Some xs -> Some (common_number_array xs)
+      | None -> (
+          match all_strings [] values with
+          | Some xs -> Some (common_string_array xs)
+          | None -> None))
+  | _ -> None
 
-let encode_program p =
-  let pairs = List.filter_map (fun x -> x) (encode_program_helper p) in
-  Js.Unsafe.obj (Array.of_list pairs)
+let encode_program_value = function
+  | DynamicValue s -> Some (Backend_pb.ProgramValue.make ~val':(`Dyn_val s) ())
+  | DynamicTextureValue s ->
+      Some (Backend_pb.ProgramValue.make ~val':(`Dyn_textval s) ())
+  | StaticValue v ->
+      Option.map
+        (fun sv -> Backend_pb.ProgramValue.make ~val':(`Static_val sv) ())
+        (static_value_to_common v)
+
+let encode_mapping (key, value) =
+  Option.map
+    (fun v -> Backend_pb.ProgramValueMapping.make ~key ~val':v ())
+    (encode_program_value value)
+
+let encode_mapping_list = function
+  | None -> []
+  | Some xs -> List.filter_map encode_mapping xs
+
+let encode_program_pb p =
+  Backend_pb.Program.make ~frag:p.frag ~vert:p.vert
+    ~uniforms:(encode_mapping_list p.uniforms)
+    ~attributes:(encode_mapping_list p.attributes)
+    ?primitive:(Option.bind p.primitive encode_program_value)
+    ?elements:(Option.bind p.elements encode_program_value)
+    ?count:(Option.bind p.count encode_program_value)
+    ()
 
 let make_effect_program texname p =
   let new_uniform =

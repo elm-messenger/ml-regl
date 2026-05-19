@@ -160,14 +160,8 @@ let proto_action = function
                ()))
         ()
 
-let encode_command_batch_pb actions load_urls =
-  let batch =
-    Audio_pb.AudioCommandBatch.make
-      ~actions:(List.map proto_action actions)
-      ~loads:
-        (List.map (fun audio_url -> Audio_pb.LoadRequest.make ~audio_url ()) load_urls)
-      ()
-  in
+let encode_command_batch_pb actions =
+  let batch = Audio_pb.AudioCommandBatch.make ~actions:(List.map proto_action actions) () in
   Audio_pb.AudioCommandBatch.to_proto batch
   |> Ocaml_protoc_plugin.Writer.contents |> Bytes.of_string
 

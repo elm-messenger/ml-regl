@@ -60,7 +60,7 @@ let audio (m : model) : Regl_audio.audio =
   | Loaded src, Some t -> Regl_audio.audio src t
   | _ -> Regl_audio.silence
 
-let init (canvas : Dom_html.canvasElement Js.t option) _ =
+let init (canvas : Dom_html.canvasElement Js.t option) =
   let startconfig : Regl.regl_start_config =
     {
       virt_width = 1920.;
@@ -72,17 +72,19 @@ let init (canvas : Dom_html.canvasElement Js.t option) _ =
   let mc = Option.get canvas in
   mc##.width := 1280;
   mc##.height := 720;
-  Regl.execCmd (Regl.start_regl startconfig);
-  Regl.execCmd (Regl.load_texture texture_name texture_url None);
-  Regl.load_audio audio_url;
-  initial_model
+  ( initial_model,
+    [
+      Regl.start_regl startconfig;
+      Regl.load_texture texture_name texture_url None;
+      Regl.load_audio audio_url;
+    ] )
 
 let update (_canvas : Dom_html.canvasElement Js.t option) (m : model)
     (e : Regl.regl_input) =
   match e with
   | Regl.Tick ts ->
       let nm = { m with current_ts = ts } in
-      (nm, view nm, audio nm, [])
+      (nm, audio nm, [])
   | Regl.Event event ->
       let ty = Js.to_string event##._type in
       let nm =
@@ -95,7 +97,7 @@ let update (_canvas : Dom_html.canvasElement Js.t option) (m : model)
           | _ -> m
         else m
       in
-      (nm, view nm, audio nm, [])
+      (nm, audio nm, [])
   | Regl.REGLRecvMsg msg ->
       let nm =
         match msg with
@@ -103,7 +105,7 @@ let update (_canvas : Dom_html.canvasElement Js.t option) (m : model)
             { m with texture_loaded = true }
         | _ -> m
       in
-      (nm, view nm, audio nm, [])
+      (nm, audio nm, [])
   | Regl.AudioMsg msg ->
       let nm =
         match msg with
@@ -114,6 +116,6 @@ let update (_canvas : Dom_html.canvasElement Js.t option) (m : model)
             { m with sound = Failed }
         | _ -> m
       in
-      (nm, view nm, audio nm, [])
+      (nm, audio nm, [])
 
-let _ = Regl.create_app init update
+let _ = Regl.create_app init update view

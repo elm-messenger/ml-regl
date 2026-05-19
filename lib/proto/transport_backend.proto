@@ -82,6 +82,11 @@ message CreateProgram {
   Program program = 2;
 }
 
+message LoadAudio {
+  string audio_url = 1;
+}
+
+
 message BackendCommand {
   oneof kind {
     LoadTexture load_texture = 1;
@@ -89,6 +94,7 @@ message BackendCommand {
     ReglConfig config_regl = 3;
     StartRegl start_regl = 4;
     CreateProgram create_program = 5;
+    LoadAudio load_audio = 6;
   }
 }
 

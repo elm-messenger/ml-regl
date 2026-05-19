@@ -62,13 +62,8 @@ message AudioAction {
   }
 }
 
-message LoadRequest {
-  string audio_url = 1;
-}
-
 message AudioCommandBatch {
   repeated AudioAction actions = 1;
-  repeated LoadRequest loads = 2;
 }
 
 message AudioContextReady {
