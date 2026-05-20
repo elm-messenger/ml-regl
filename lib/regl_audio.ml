@@ -8,8 +8,7 @@ type play_config = {
   start_at : float;
 }
 
-let default_config =
-  { loop = None; playback_rate = 1.0; start_at = 0.0 }
+let default_config = { loop = None; playback_rate = 1.0; start_at = 0.0 }
 
 type effect_type =
   | ScaleVolume of float
@@ -84,7 +83,8 @@ let abs_start_time f = f.start_time +. f.offset
 
 (* volume timelines shifted by the same offset *)
 let shifted_volume_timelines f =
-  List.map (fun tl -> List.map (fun (t, v) -> (t +. f.offset, v)) tl)
+  List.map
+    (fun tl -> List.map (fun (t, v) -> (t +. f.offset, v)) tl)
     f.volume_timelines
 
 module Audio_pb = Transport_audio.Mlregl.Transport.Audio
@@ -105,8 +105,7 @@ let proto_volume_point (time, volume) =
 let proto_volume_timeline timeline =
   Audio_pb.VolumeTimeline.make ~points:(List.map proto_volume_point timeline) ()
 
-let proto_volume_timelines timelines =
-  List.map proto_volume_timeline timelines
+let proto_volume_timelines timelines = List.map proto_volume_timeline timelines
 
 let proto_loop = function
   | Some { loop_start; loop_end } ->
@@ -118,21 +117,16 @@ let proto_action = function
       Audio_pb.AudioAction.make
         ~kind:
           (`Start_sound
-            (Audio_pb.StartSound.make
-           ~node_group_id
-           ~buffer_id:f.source.buffer_id
-           ~start_time:(abs_start_time f)
-           ~start_at:f.start_at
-           ~volume:f.volume
-           ~volume_timelines:
-             (proto_volume_timelines (shifted_volume_timelines f))
-           ?loop:(proto_loop f.loop)
-           ~playback_rate:f.playback_rate
-           ()))
+             (Audio_pb.StartSound.make ~node_group_id
+                ~buffer_id:f.source.buffer_id ~start_time:(abs_start_time f)
+                ~start_at:f.start_at ~volume:f.volume
+                ~volume_timelines:
+                  (proto_volume_timelines (shifted_volume_timelines f))
+                ?loop:(proto_loop f.loop) ~playback_rate:f.playback_rate ()))
         ()
   | StopSound node_group_id ->
       Audio_pb.AudioAction.make
-        ~kind:(`Stop_sound (Audio_pb.StopSound.make ~node_group_id () ))
+        ~kind:(`Stop_sound (Audio_pb.StopSound.make ~node_group_id ()))
         ()
   | SetVolume (node_group_id, volume) ->
       Audio_pb.AudioAction.make
@@ -142,26 +136,28 @@ let proto_action = function
       Audio_pb.AudioAction.make
         ~kind:
           (`Set_loop_config
-            (Audio_pb.SetLoopConfig.make ~node_group_id ?loop:(proto_loop loop)
-               ()))
+             (Audio_pb.SetLoopConfig.make ~node_group_id ?loop:(proto_loop loop)
+                ()))
         ()
   | SetPlaybackRate (node_group_id, playback_rate) ->
       Audio_pb.AudioAction.make
         ~kind:
           (`Set_playback_rate
-            (Audio_pb.SetPlaybackRate.make ~node_group_id ~playback_rate ()))
+             (Audio_pb.SetPlaybackRate.make ~node_group_id ~playback_rate ()))
         ()
   | SetVolumeAt (node_group_id, f) ->
       Audio_pb.AudioAction.make
         ~kind:
           (`Set_volume_at
-            (Audio_pb.SetVolumeAt.make ~node_group_id
-               ~volume_at:(proto_volume_timelines (shifted_volume_timelines f))
-               ()))
+             (Audio_pb.SetVolumeAt.make ~node_group_id
+                ~volume_at:(proto_volume_timelines (shifted_volume_timelines f))
+                ()))
         ()
 
 let encode_command_batch_pb actions =
-  let batch = Audio_pb.AudioCommandBatch.make ~actions:(List.map proto_action actions) () in
+  let batch =
+    Audio_pb.AudioCommandBatch.make ~actions:(List.map proto_action actions) ()
+  in
   Audio_pb.AudioCommandBatch.to_proto batch
   |> Ocaml_protoc_plugin.Writer.contents |> Bytes.of_string
 
@@ -175,23 +171,21 @@ type prev_state = { entries : (int * flat) list; next_id : int }
 
 let empty_state = { entries = []; next_id = 0 }
 
-(* Equality of two flat audio entries except for the "incrementally
-   updatable" fields (volume, loop, playback_rate, volume timelines). Two
-   entries match if they share buffer + effective start time + start_at. *)
+(* Equality of two flat audio entries except for the "incrementally updatable"
+   fields (volume, loop, playback_rate, volume timelines). Two entries match if
+   they share buffer + effective start time + start_at. *)
 let same_voice (a : flat) (b : flat) =
   a.source.buffer_id = b.source.buffer_id
   && abs_start_time a = abs_start_time b
   && a.start_at = b.start_at
 
 let flat_equal (a : flat) (b : flat) =
-  same_voice a b
-  && a.volume = b.volume
-  && a.loop = b.loop
+  same_voice a b && a.volume = b.volume && a.loop = b.loop
   && a.playback_rate = b.playback_rate
   && shifted_volume_timelines a = shifted_volume_timelines b
 
-(* Pop the first element of [xs] that satisfies [p]; return Some(elem, rest)
-   or None. *)
+(* Pop the first element of [xs] that satisfies [p]; return Some(elem, rest) or
+   None. *)
 let pop_first p xs =
   let rec loop acc = function
     | [] -> None
@@ -204,11 +198,10 @@ let diff_actions (prev : prev_state) (new_audio : audio) :
     prev_state * audio_action list =
   let new_flats = flatten new_audio in
   (* For each previous entry, try to find a still-valid voice in [new_flats].
-     Three outcomes:
-     - exact match: reuse the entry, no message
-     - same voice but different settings: reuse entry + emit incremental
-       updates (set volume / loop / rate / volume timeline)
-     - no matching voice: emit stopSound, drop entry *)
+     Three outcomes: - exact match: reuse the entry, no message - same voice but
+     different settings: reuse entry + emit incremental updates (set volume /
+     loop / rate / volume timeline) - no matching voice: emit stopSound, drop
+     entry *)
   let rec walk prev_entries new_flats msgs kept =
     match prev_entries with
     | [] -> (kept, new_flats, msgs)
@@ -232,8 +225,7 @@ let diff_actions (prev : prev_state) (new_audio : audio) :
                   <> shifted_volume_timelines new_flat
                 then m := SetVolumeAt (id, new_flat) :: !m;
                 walk rest leftover !m ((id, new_flat) :: kept)
-            | None ->
-                walk rest new_flats (StopSound id :: msgs) kept))
+            | None -> walk rest new_flats (StopSound id :: msgs) kept))
   in
   let kept, leftovers, msgs = walk prev.entries new_flats [] [] in
   (* Anything left in [leftovers] is a brand-new voice. *)
@@ -266,8 +258,7 @@ let decode_recv_msg_pb payload =
     let reader = Ocaml_protoc_plugin.Reader.create (Bytes.to_string payload) in
     let ev = Audio_pb.AudioBackendEvent.from_proto_exn reader in
     match ev with
-    | `Audio_context_ready sample_rate ->
-        Some (ContextReady { sample_rate })
+    | `Audio_context_ready sample_rate -> Some (ContextReady { sample_rate })
     | `Audio_load_success msg ->
         Some
           (LoadSuccess

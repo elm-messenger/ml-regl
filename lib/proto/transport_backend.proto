@@ -51,7 +51,7 @@ message StartRegl {
   double virt_width = 1;
   double virt_height = 2;
   uint32 fbo_num = 3;
-  repeated string builtin_programs = 4;
+  common.StringArray builtin_programs = 4;
 }
 
 message ProgramValue {

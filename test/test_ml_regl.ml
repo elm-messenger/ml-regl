@@ -3,10 +3,7 @@ open Js_of_ocaml
 
 (* Demo: load a texture and an audio source, render the image, click to play. *)
 
-type sound_state =
-  | Loading
-  | Loaded of Regl_audio.source
-  | Failed
+type sound_state = Loading | Loaded of Regl_audio.source | Failed
 
 type model = {
   current_ts : float;  (** absolute ms from latest Tick *)
@@ -16,12 +13,7 @@ type model = {
 }
 
 let initial_model =
-  {
-    current_ts = 0.0;
-    texture_loaded = false;
-    sound = Loading;
-    play_at = None;
-  }
+  { current_ts = 0.0; texture_loaded = false; sound = Loading; play_at = None }
 
 let texture_name = "enemy"
 let texture_url = "test/assets/enemy.png"
@@ -31,15 +23,11 @@ let view (m : model) =
   let bg = Regl_builtin_programs.clear Color.white in
   let img =
     if m.texture_loaded then
-      [
-        Regl_builtin_programs.centered_texture (960., 540.) (256., 256.) 0.0
-          texture_name;
-      ]
+      Regl_builtin_programs.centered_texture (960., 540.) (256., 256.) 0.0
+        texture_name
     else
-      [
-        Regl_builtin_programs.textbox_centered (960., 540.) 40.
-          "Loading texture..." "consolas" Color.black;
-      ]
+      Regl_builtin_programs.textbox_centered (960., 540.) 40.
+        "Loading texture..." "consolas" Color.black
   in
   let status =
     let msg =
@@ -53,7 +41,7 @@ let view (m : model) =
     Regl_builtin_programs.textbox_centered (960., 900.) 40. msg "consolas"
       Color.black
   in
-  Regl_common.group [] ([ bg ] @ img @ [ status ])
+  Regl_common.group [] [ bg; img; status ]
 
 let audio (m : model) : Regl_audio.audio =
   match (m.sound, m.play_at) with
@@ -109,8 +97,8 @@ let update (_canvas : Dom_html.canvasElement Js.t option) (m : model)
   | Regl.AudioMsg msg ->
       let nm =
         match msg with
-        | Regl.AudioLoadSuccess { audio_url = url; source }
-          when url = audio_url ->
+        | Regl.AudioLoadSuccess { audio_url = url; source } when url = audio_url
+          ->
             { m with sound = Loaded source }
         | Regl.AudioLoadFailed { audio_url = url; _ } when url = audio_url ->
             { m with sound = Failed }

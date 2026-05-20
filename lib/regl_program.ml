@@ -18,13 +18,10 @@ type regl_program = {
 }
 
 let js_typeof x = Js.to_string (Js.typeof x)
-
-let js_array_is_array =
-  Js.Unsafe.get (Js.Unsafe.js_expr "Array") "isArray"
+let js_array_is_array = Js.Unsafe.get (Js.Unsafe.js_expr "Array") "isArray"
 
 let is_js_array x =
-  Js.to_bool
-    (Js.Unsafe.fun_call js_array_is_array [| Js.Unsafe.inject x |])
+  Js.to_bool (Js.Unsafe.fun_call js_array_is_array [| Js.Unsafe.inject x |])
 
 let common_number n = Common_pb.Value.make ~kind:(`Number_value n) ()
 let common_string s = Common_pb.Value.make ~kind:(`String_value s) ()
@@ -40,11 +37,10 @@ let common_string_array values =
 
 let static_value_to_common (v : Js.Unsafe.any) : Common_pb.Value.t option =
   match js_typeof v with
-  | "number" ->
-      Some (common_number (Js.float_of_number (Js.Unsafe.coerce v)))
+  | "number" -> Some (common_number (Js.float_of_number (Js.Unsafe.coerce v)))
   | "string" -> Some (common_string (Js.to_string (Js.Unsafe.coerce v)))
   | "boolean" -> Some (common_bool (Js.to_bool (Js.Unsafe.coerce v)))
-  | _ when is_js_array v ->
+  | _ when is_js_array v -> (
       let arr = Js.to_array (Js.Unsafe.coerce v) in
       let values = Array.to_list arr in
       let rec all_numbers acc = function
@@ -59,7 +55,7 @@ let static_value_to_common (v : Js.Unsafe.any) : Common_pb.Value.t option =
             all_strings (Js.to_string (Js.Unsafe.coerce x) :: acc) rest
         | _ -> None
       in
-      (match all_numbers [] values with
+      match all_numbers [] values with
       | Some xs -> Some (common_number_array xs)
       | None -> (
           match all_strings [] values with

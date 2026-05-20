@@ -33,6 +33,7 @@ type regl_recv_msg =
   | REGLProgramCreated of string
 
 module Backend_pb = Transport_backend.Mlregl.Transport.Backend
+module Common_pb = Transport_common.Mlregl.Transport.Common
 
 let backend_mag = function
   | MagNearest -> Backend_pb.TextureMagOption.TEXTURE_MAG_OPTION_NEAREST
@@ -76,22 +77,24 @@ let backend_create_program name program =
     ~program:(Regl_program.encode_program_pb program)
     ()
 
-let encode_backend_command_batch_pb (commands : Backend_pb.BackendCommand.t list)
-    : bytes =
+let encode_backend_command_batch_pb
+    (commands : Backend_pb.BackendCommand.t list) : bytes =
   Backend_pb.BackendCommandBatch.to_proto commands
-  |> Ocaml_protoc_plugin.Writer.contents
-  |> Bytes.unsafe_of_string
+  |> Ocaml_protoc_plugin.Writer.contents |> Bytes.unsafe_of_string
 
 let execCmdPb commands =
   let mlregl = Js.Unsafe.global##.MlREGL in
   let payload = encode_backend_command_batch_pb commands in
   let bytes = Regl_transport.uint8array_of_bytes payload in
-  Js.Unsafe.fun_call (Js.Unsafe.get mlregl "execCmdPb")
+  Js.Unsafe.fun_call
+    (Js.Unsafe.get mlregl "execCmdPb")
     [| Js.Unsafe.inject bytes |]
 
 let decode_backend_event_pb (payload : bytes) : regl_recv_msg option =
   try
-    let reader = Ocaml_protoc_plugin.Reader.create (Bytes.unsafe_to_string payload) in
+    let reader =
+      Ocaml_protoc_plugin.Reader.create (Bytes.unsafe_to_string payload)
+    in
     match Backend_pb.BackendEvent.from_proto_exn reader with
     | `Texture_loaded { name; width; height } ->
         Some (REGLTextureLoaded { name; width; height })
@@ -104,7 +107,8 @@ let execAudioCmdPb actions =
   let mlregl = Js.Unsafe.global##.MlREGL in
   let payload = Regl_audio.encode_command_batch_pb actions in
   let bytes = Regl_transport.uint8array_of_bytes payload in
-  Js.Unsafe.fun_call (Js.Unsafe.get mlregl "execAudioCmdPb")
+  Js.Unsafe.fun_call
+    (Js.Unsafe.get mlregl "execAudioCmdPb")
     [| Js.Unsafe.inject bytes |]
 
 type audio_recv_msg =
@@ -122,7 +126,11 @@ type regl_output = Backend_pb.BackendCommand.t
 
 let load_texture name url options =
   Backend_pb.BackendCommand.make
-    ~kind:(`Load_texture (Backend_pb.LoadTexture.make ~name ~url ?options:(backend_texture_options options) ()))
+    ~kind:
+      (`Load_texture
+         (Backend_pb.LoadTexture.make ~name ~url
+            ?options:(backend_texture_options options)
+            ()))
     ()
 
 let load_font name image_url json_url =
@@ -133,12 +141,17 @@ let load_font name image_url json_url =
 let start_regl cfg =
   Backend_pb.BackendCommand.make
     ~kind:
-      (`Start_regl
-        (Backend_pb.StartRegl.make ~virt_width:cfg.virt_width
-           ~virt_height:cfg.virt_height ~fbo_num:cfg.fbo_num
-           ~builtin_programs:
-             (match cfg.builtin_programs with None -> [] | Some xs -> xs)
-           ()))
+      (match cfg.builtin_programs with
+      | None ->
+          `Start_regl
+            (Backend_pb.StartRegl.make ~virt_width:cfg.virt_width
+               ~virt_height:cfg.virt_height ~fbo_num:cfg.fbo_num ())
+      | Some xs ->
+          let bps = Common_pb.StringArray.make ~values:xs () in
+          `Start_regl
+            (Backend_pb.StartRegl.make ~virt_width:cfg.virt_width
+               ~virt_height:cfg.virt_height ~fbo_num:cfg.fbo_num
+               ~builtin_programs:bps ()))
     ()
 
 let create_regl_program name program =
@@ -148,9 +161,7 @@ let create_regl_program name program =
 
 let config_regl cfg =
   let interval_ms =
-    match cfg.time_interval with
-    | AnimationFrame -> -1.0
-    | Millisecond ms -> ms
+    match cfg.time_interval with AnimationFrame -> -1.0 | Millisecond ms -> ms
   in
   Backend_pb.BackendCommand.make
     ~kind:(`Config_regl (Backend_pb.ReglConfig.make ~interval_ms ()))
@@ -180,7 +191,9 @@ let create_app
         let m', audio_tree, outputs = update !canvas m input in
         model := Some m';
         execute_backend_cmds outputs;
-        let new_state, audio_actions = Regl_audio.diff_actions !audio_state audio_tree in
+        let new_state, audio_actions =
+          Regl_audio.diff_actions !audio_state audio_tree
+        in
         audio_state := new_state;
         if audio_actions <> [] then execAudioCmdPb audio_actions
     | None -> ()
@@ -203,22 +216,20 @@ let create_app
                    Regl_common.encode_frame_pb (view m)
                    |> Regl_transport.uint8array_of_bytes |> Js.Unsafe.inject
                | None -> Js.Unsafe.inject Js.null) );
-        ( "recvREGLCmdPb",
-          Js.Unsafe.inject (fun recvcmd ->
-              let payload =
-                Regl_transport.bytes_of_uint8array
-                  (Js.Unsafe.coerce recvcmd)
-              in
-              match decode_backend_event_pb payload with
-              | Some msg -> update_model (REGLRecvMsg msg)
-              | None -> ()) );
-        ( "recvAudioMsgPb",
-          Js.Unsafe.inject (fun recvmsg ->
-              let payload =
-                Regl_transport.bytes_of_uint8array
-                  (Js.Unsafe.coerce recvmsg)
-              in
-              match Regl_audio.decode_recv_msg_pb payload with
+         ( "recvREGLCmdPb",
+           Js.Unsafe.inject (fun recvcmd ->
+               let payload =
+                 Regl_transport.bytes_of_uint8array (Js.Unsafe.coerce recvcmd)
+               in
+               match decode_backend_event_pb payload with
+               | Some msg -> update_model (REGLRecvMsg msg)
+               | None -> ()) );
+         ( "recvAudioMsgPb",
+           Js.Unsafe.inject (fun recvmsg ->
+               let payload =
+                 Regl_transport.bytes_of_uint8array (Js.Unsafe.coerce recvmsg)
+               in
+               match Regl_audio.decode_recv_msg_pb payload with
                | Some (Regl_audio.LoadSuccess { audio_url; source }) ->
                    update_model
                      (AudioMsg (AudioLoadSuccess { audio_url; source }))

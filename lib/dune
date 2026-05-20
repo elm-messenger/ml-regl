@@ -1,9 +1,15 @@
-
 (rule
- (targets transport_audio.ml transport_backend.ml transport_render.ml transport_common.ml)
+ (targets
+  transport_audio.ml
+  transport_backend.ml
+  transport_render.ml
+  transport_common.ml)
  (deps
-  (:protos proto/transport_audio.proto proto/transport_common.proto proto/transport_backend.proto proto/transport_render.proto)
-  )
+  (:protos
+   proto/transport_audio.proto
+   proto/transport_common.proto
+   proto/transport_backend.proto
+   proto/transport_render.proto))
  (action
   (run protoc -I proto --ocaml_out=. %{protos})))
 

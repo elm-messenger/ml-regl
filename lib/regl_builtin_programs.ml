@@ -22,36 +22,22 @@ let empty = group [] []
 
 let clear color =
   let rgba_list = to_rgba_list color in
-  atomic "clear"
-    [
-      nums "color" rgba_list;
-      num "depth" 1.0;
-    ]
+  atomic "clear" [ nums "color" rgba_list; num "depth" 1.0 ]
 
 let triangle (x1, y1) (x2, y2) (x3, y3) color =
   let rgba_list = to_rgba_list color in
   atomic "triangle"
-      [
-      nums "pos" [ x1; y1; x2; y2; x3; y3 ];
-      nums "color" rgba_list;
-    ]
+    [ nums "pos" [ x1; y1; x2; y2; x3; y3 ]; nums "color" rgba_list ]
 
 let quad (x1, y1) (x2, y2) (x3, y3) (x4, y4) color =
   let rgba_list = to_rgba_list color in
   atomic "quad"
-      [
-      nums "pos" [ x1; y1; x2; y2; x3; y3; x4; y4 ];
-      nums "color" rgba_list;
-    ]
+    [ nums "pos" [ x1; y1; x2; y2; x3; y3; x4; y4 ]; nums "color" rgba_list ]
 
 let rect_centered (x, y) (w, h) angle color =
   let rgba_list = to_rgba_list color in
   atomic "rect"
-      [
-      nums "posize" [ x; y; w; h ];
-      num "angle" angle;
-      nums "color" rgba_list;
-    ]
+    [ nums "posize" [ x; y; w; h ]; num "angle" angle; nums "color" rgba_list ]
 
 let rect (x, y) (w, h) color =
   rect_centered (x +. (w /. 2.0), y +. (h /. 2.0)) (w, h) 0.0 color
@@ -64,12 +50,7 @@ let poly xs color =
       (List.init (List.length xs - 2) (fun i -> i + 1))
   in
   let rgba_list = to_rgba_list color in
-  atomic "poly"
-      [
-      nums "pos" pos;
-      nums "elem" elem;
-      nums "color" rgba_list;
-    ]
+  atomic "poly" [ nums "pos" pos; nums "elem" elem; nums "color" rgba_list ]
 
 let lines xs color =
   let pos =
@@ -78,7 +59,7 @@ let lines xs color =
   let elem = List.init (2 * List.length xs) float_of_int in
   let rgba_list = to_rgba_list color in
   atomic "poly"
-      [
+    [
       nums "pos" pos;
       nums "elem" elem;
       nums "color" rgba_list;
@@ -90,7 +71,7 @@ let linestrip xs color =
   let elem = List.init (List.length xs) float_of_int in
   let rgba_list = to_rgba_list color in
   atomic "poly"
-      [
+    [
       nums "pos" pos;
       nums "elem" elem;
       nums "color" rgba_list;
@@ -102,7 +83,7 @@ let lineloop xs color =
   let elem = List.init (List.length xs) float_of_int in
   let rgba_list = to_rgba_list color in
   atomic "poly"
-      [
+    [
       nums "pos" pos;
       nums "elem" elem;
       nums "color" rgba_list;
@@ -122,7 +103,7 @@ let poly_prim xs elem color prim =
   let pos = List.concat_map (fun (x, y) -> [ x; y ]) xs in
   let rgba_list = to_rgba_list color in
   atomic "poly"
-      [
+    [
       nums "pos" pos;
       nums "elem" elem;
       nums "color" rgba_list;
@@ -131,32 +112,21 @@ let poly_prim xs elem color prim =
 
 let circle (x1, y1) r color =
   let rgba_list = to_rgba_list color in
-  atomic "circle"
-      [
-      nums "cr" [ x1; y1; r ];
-      nums "color" rgba_list;
-    ]
+  atomic "circle" [ nums "cr" [ x1; y1; r ]; nums "color" rgba_list ]
 
 let rounded_rect (x1, y1) (w, h) r color =
   let rgba_list = to_rgba_list color in
   atomic "roundedRect"
-      [
-      nums "cs" [ x1; y1; w; h ];
-      num "radius" r;
-      nums "color" rgba_list;
-    ]
+    [ nums "cs" [ x1; y1; w; h ]; num "radius" r; nums "color" rgba_list ]
 
 let texture (x1, y1) (x2, y2) (x3, y3) (x4, y4) name =
   atomic "texture"
-      [
-      str "texture" name;
-      nums "pos" [ x1; y1; x2; y2; x3; y3; x4; y4 ];
-    ]
+    [ str "texture" name; nums "pos" [ x1; y1; x2; y2; x3; y3; x4; y4 ] ]
 
 let texture_cropped (x1, y1) (x2, y2) (x3, y3) (x4, y4) (cx1, cy1) (cx2, cy2)
     (cx3, cy3) (cx4, cy4) name =
   atomic "textureCropped"
-      [
+    [
       str "texture" name;
       nums "pos" [ x1; y1; x2; y2; x3; y3; x4; y4 ];
       nums "texc" [ cx1; cy1; cx2; cy2; cx3; cy3; cx4; cy4 ];
@@ -167,15 +137,11 @@ let rec rect_texture (x, y) (w, h) name =
 
 and centered_texture (x, y) (w, h) angle name =
   atomic "centeredTexture"
-      [
-      str "texture" name;
-      nums "posize" [ x; y; w; h ];
-      num "angle" angle;
-    ]
+    [ str "texture" name; nums "posize" [ x; y; w; h ]; num "angle" angle ]
 
 let rect_texture_cropped (x, y) (w, h) (cx, cy) (cw, ch) name =
   atomic "textureCropped"
-      [
+    [
       str "texture" name;
       nums "pos" [ x; y; x +. w; y; x +. w; y +. h; x; y +. h ];
       nums "texc"
@@ -193,7 +159,7 @@ let rect_texture_cropped (x, y) (w, h) (cx, cy) (cw, ch) name =
 
 let centered_texture_cropped (x, y) (w, h) angle (cx, cy) (cw, ch) name =
   atomic "centeredCroppedTexture"
-      [
+    [
       str "texture" name;
       nums "posize" [ x; y; w; h ];
       num "angle" angle;
@@ -203,7 +169,7 @@ let centered_texture_cropped (x, y) (w, h) angle (cx, cy) (cw, ch) name =
 (* Functions with alpha *)
 let texture_with_alpha (x1, y1) (x2, y2) (x3, y3) (x4, y4) alpha name =
   atomic "texture"
-      [
+    [
       str "texture" name;
       nums "pos" [ x1; y1; x2; y2; x3; y3; x4; y4 ];
       num "alpha" alpha;
@@ -212,7 +178,7 @@ let texture_with_alpha (x1, y1) (x2, y2) (x3, y3) (x4, y4) alpha name =
 let texture_cropped_with_alpha (x1, y1) (x2, y2) (x3, y3) (x4, y4) (cx1, cy1)
     (cx2, cy2) (cx3, cy3) (cx4, cy4) alpha name =
   atomic "textureCropped"
-      [
+    [
       str "texture" name;
       nums "pos" [ x1; y1; x2; y2; x3; y3; x4; y4 ];
       nums "texc" [ cx1; cy1; cx2; cy2; cx3; cy3; cx4; cy4 ];
@@ -226,7 +192,7 @@ let rec rect_texture_with_alpha (x, y) (w, h) alpha name =
 
 and centered_texture_with_alpha (x, y) (w, h) angle alpha name =
   atomic "centeredTexture"
-      [
+    [
       str "texture" name;
       nums "posize" [ x; y; w; h ];
       num "angle" angle;
@@ -235,7 +201,7 @@ and centered_texture_with_alpha (x, y) (w, h) angle alpha name =
 
 let rect_texture_cropped_with_alpha (x, y) (w, h) (cx, cy) (cw, ch) alpha name =
   atomic "textureCropped"
-      [
+    [
       str "texture" name;
       nums "pos" [ x; y; x +. w; y; x +. w; y +. h; x; y +. h ];
       nums "texc"
@@ -255,7 +221,7 @@ let rect_texture_cropped_with_alpha (x, y) (w, h) (cx, cy) (cw, ch) alpha name =
 let centered_texture_cropped_with_alpha (x, y) (w, h) angle (cx, cy) (cw, ch)
     alpha name =
   atomic "centeredCroppedTexture"
-      [
+    [
       str "texture" name;
       nums "posize" [ x; y; w; h ];
       num "angle" angle;
@@ -301,7 +267,7 @@ let default_textbox_option =
 let textbox (x, y) size text font color =
   let rgba_list = to_rgba_list color in
   atomic "textbox"
-      [
+    [
       str "text" text;
       num "size" size;
       nums "offset" [ x; y ];
@@ -312,7 +278,7 @@ let textbox (x, y) size text font color =
 let textbox_mf (x, y) size text fonts color =
   let rgba_list = to_rgba_list color in
   atomic "textbox"
-      [
+    [
       str "text" text;
       num "size" size;
       nums "offset" [ x; y ];
@@ -323,7 +289,7 @@ let textbox_mf (x, y) size text fonts color =
 let textbox_centered (x, y) size text font color =
   let rgba_list = to_rgba_list color in
   atomic "textbox"
-      [
+    [
       str "text" text;
       num "size" size;
       nums "offset" [ x; y ];
@@ -336,7 +302,7 @@ let textbox_centered (x, y) size text font color =
 let textbox_mf_centered (x, y) size text fonts color =
   let rgba_list = to_rgba_list color in
   atomic "textbox"
-      [
+    [
       str "text" text;
       num "size" size;
       nums "offset" [ x; y ];
@@ -350,17 +316,15 @@ let textbox_pro (x, y) opt =
   let rgba_list = to_rgba_list opt.color in
   let maybe_num key = function None -> [] | Some v -> [ num key v ] in
   let maybe_str key = function None -> [] | Some v -> [ str key v ] in
-  let word_break =
-    if opt.word_break then [ bool "wordBreak" true ] else []
-  in
+  let word_break = if opt.word_break then [ bool "wordBreak" true ] else [] in
   atomic "textbox"
     ([
-      str "text" opt.text;
-      num "size" opt.size;
-      nums "offset" [ x; y ];
-      strs "fonts" opt.fonts;
-      nums "color" rgba_list;
-    ]
+       str "text" opt.text;
+       num "size" opt.size;
+       nums "offset" [ x; y ];
+       strs "fonts" opt.fonts;
+       nums "color" rgba_list;
+     ]
     @ word_break
     @ maybe_str "align" opt.align
     @ maybe_str "valign" opt.valign
