@@ -1,3 +1,24 @@
+; Cross-backend tests.
+;
+; Each .ml below contains pure platform-agnostic code that ends with
+; [Regl_backend.create_app init update view]. We declare two executable
+; stanzas per source: one js variant linking the JS backend, one native
+; variant linking the desktop backend. The user picks at build time:
+;
+;     # Browser bundle (writes test/test_ml_regl.bc.js):
+;     dune build test/test_ml_regl.bc.js
+;
+;     # Native binary (writes test/test_ml_regl_desktop.exe):
+;     DECLGL_BUILD_DIR=$PWD/declgl-desktop/build/mac-debug \
+;       dune build test/test_ml_regl_desktop.exe
+;
+; The desktop variants depend on the foreign-archive build via the
+; DECLGL_BUILD_DIR env var (see lib/backend/desktop/dune). Without it
+; set, dune will refuse to build the desktop variants but still build
+; the js variants cleanly.
+
+; --- test_ml_regl: full-coverage demo of the public API ----------------
+
 (executable
  (name test_ml_regl)
  (modules test_ml_regl)
@@ -10,6 +31,21 @@
  (js_of_ocaml
   (flags
    (:standard --opt=3))))
+
+(executable
+ (name test_ml_regl_desktop)
+ (modules test_ml_regl_desktop)
+ (libraries ml_regl_desktop)
+ (modes (native exe))
+ (flags
+  (:standard -warn-error -A)))
+
+(rule
+ (target test_ml_regl_desktop.ml)
+ (deps test_ml_regl.ml)
+ (action (copy %{deps} %{target})))
+
+; --- test_stress_ml_regl: stress-test variant --------------------------
 
 (executable
  (name test_stress_ml_regl)
@@ -25,6 +61,21 @@
    (:standard --opt=3))))
 
 (executable
+ (name test_stress_ml_regl_desktop)
+ (modules test_stress_ml_regl_desktop)
+ (libraries ml_regl_desktop)
+ (modes (native exe))
+ (flags
+  (:standard -warn-error -A)))
+
+(rule
+ (target test_stress_ml_regl_desktop.ml)
+ (deps test_stress_ml_regl.ml)
+ (action (copy %{deps} %{target})))
+
+; --- test_failures_ml_regl: error-path coverage ------------------------
+
+(executable
  (name test_failures_ml_regl)
  (modules test_failures_ml_regl)
  (libraries js_of_ocaml ml_regl_js)
@@ -37,11 +88,45 @@
   (flags
    (:standard --opt=3))))
 
-; Native desktop smoke test — links against ml_regl_desktop, which in turn
-; pulls in libdeclgl.a (sibling C++ project) via (foreign_archives).
+(executable
+ (name test_failures_ml_regl_desktop)
+ (modules test_failures_ml_regl_desktop)
+ (libraries ml_regl_desktop)
+ (modes (native exe))
+ (flags
+  (:standard -warn-error -A)))
+
+(rule
+ (target test_failures_ml_regl_desktop.ml)
+ (deps test_failures_ml_regl.ml)
+ (action (copy %{deps} %{target})))
+
+; --- test_desktop_smoke: minimal triangle smoke test -------------------
+; (Also gets a js variant for consistency, even though the smoke test was
+; originally written for desktop verification.)
+
+(executable
+ (name test_desktop_smoke_desktop)
+ (modules test_desktop_smoke_desktop)
+ (libraries ml_regl_desktop)
+ (modes (native exe))
+ (flags
+  (:standard -warn-error -A)))
+
 (executable
  (name test_desktop_smoke)
  (modules test_desktop_smoke)
- (libraries ml_regl_desktop)
+ (libraries js_of_ocaml ml_regl_js)
+ (modes js)
+ (preprocess
+  (pps js_of_ocaml-ppx))
  (flags
-  (:standard -warn-error -A)))
+  (:standard -warn-error -A))
+ (js_of_ocaml
+  (flags
+   (:standard --opt=3))))
+
+(rule
+ (target test_desktop_smoke_desktop.ml)
+ (deps test_desktop_smoke.ml)
+ (action (copy %{deps} %{target})))

@@ -1,10 +1,11 @@
-(* Minimal desktop smoke test — opens a window via [Regl_desktop.create_app],
+(* Minimal cross-backend smoke test — opens a window via [Regl_backend.create_app],
    draws a single triangle, prints a few lifecycle events, and exits when
-   the window is closed. *)
+   the window is closed. Same source compiles for either backend; the
+   choice is made in the dune executable stanza via the (libraries ...)
+   field. *)
 
 open Ml_regl_core
 open Ml_regl_core.Regl_proto
-open Ml_regl_desktop
 
 type model = {
   ts : float;
@@ -60,6 +61,6 @@ let view (m : model) : Regl_common.renderable =
     (Color.rgb 0.9 0.3 0.3)
 
 let () =
-  Printf.printf "[smoke] starting Regl_desktop.create_app\n%!";
-  Regl_desktop.create_app init update view;
+  Printf.printf "[smoke] starting Regl_backend.create_app\n%!";
+  Regl_backend.create_app init update view;
   Printf.printf "[smoke] create_app returned cleanly\n%!"

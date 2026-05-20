@@ -1,11 +1,16 @@
 ; Browser facade: re-exports ml_regl_core and adds the [Js.export "MlApp"]
 ; bridge plus DOM-typed [regl_input]. Existing test files keep depending on
 ; this library and the [Regl] module unchanged.
+;
+; Also implements the virtual library [regl_backend] (single module
+; [Regl_backend] re-exporting [Regl_js.create_app]) so platform-agnostic
+; tests can link against either backend without source changes.
 
 (library
  (name ml_regl_js)
  (public_name regl_js)
- (modules regl_js)
+ (modules regl_js regl_backend)
+ (implements regl_backend)
  (libraries js_of_ocaml ml_regl_core)
  (preprocess
   (pps js_of_ocaml-ppx))

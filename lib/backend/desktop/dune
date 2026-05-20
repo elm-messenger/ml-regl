@@ -49,7 +49,8 @@
 (library
  (name ml_regl_desktop)
  (public_name regl_desktop)
- (modules regl_desktop)
+ (modules regl_desktop regl_backend)
+ (implements regl_backend)
  (modes native)
  (libraries ml_regl_core)
  (foreign_archives declgl)

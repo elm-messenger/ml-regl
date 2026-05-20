@@ -27,7 +27,8 @@
   ("dune" (>= 3.19))
   "js_of_ocaml"
   "js_of_ocaml-ppx"
-  "ml_regl_core")
+  "ml_regl_core"
+  "regl_backend")
  (tags
   (graphics web webgl bindings regl)))
 
@@ -39,7 +40,8 @@
  (depends
   ("ocaml" (>= 4.13))
   ("dune" (>= 3.19))
-  "ml_regl_core")
+  "ml_regl_core"
+  "regl_backend")
  (tags
   (graphics protobuf bindings regl)))
 
@@ -54,5 +56,17 @@
   "ocaml-protoc-plugin")
  (tags
   (graphics protobuf bindings regl)))
+
+(package
+ (name regl_backend)
+ (synopsis "Virtual library declaring the unified ml_regl backend entry point")
+ (description
+  "Virtual library: declares the platform-agnostic [Regl_backend.create_app] signature implemented by both [regl_js] (browser) and [regl_desktop] (native). Cross-backend tests link against this plus exactly one implementation, picking the platform at link time.")
+ (depends
+  ("ocaml" (>= 4.13))
+  ("dune" (>= 3.19))
+  "ml_regl_core")
+ (tags
+  (graphics bindings regl virtual)))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/reference/dune-project/index.html

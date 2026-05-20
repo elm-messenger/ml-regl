@@ -59,4 +59,4 @@ let view (m : model) =
            "consolas" (Color.rgb 0.7 0.4 0.0));
     ]
 
-let _ = Ml_regl_js.Regl_js.create_app init update view
+let _ = Regl_backend.create_app init update view

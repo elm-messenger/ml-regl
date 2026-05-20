@@ -176,4 +176,4 @@ let view (m : model) =
       overlay;
     ]
 
-let _ = Ml_regl_js.Regl_js.create_app init update view
+let _ = Regl_backend.create_app init update view

@@ -1,0 +1,16 @@
+; Virtual library: declares the unified backend entry point used by tests
+; and applications. Two implementations exist:
+;   - lib/backend/js/      → ml_regl_js      (browser, via js_of_ocaml)
+;   - lib/backend/desktop/ → ml_regl_desktop (native, via libdeclgl)
+;
+; Tests link against `regl_backend` plus exactly one of the impl libraries,
+; so the same source compiles to either a .bc.js bundle or a native .exe.
+
+(library
+ (name regl_backend)
+ (public_name regl_backend)
+ (modules regl_backend)
+ (virtual_modules regl_backend)
+ (libraries ml_regl_core)
+ (flags
+  (:standard -warn-error -A)))

@@ -17,6 +17,7 @@ depends: [
   "js_of_ocaml"
   "js_of_ocaml-ppx"
   "ml_regl_core"
+  "regl_backend"
   "odoc" {with-doc}
 ]
 build: [

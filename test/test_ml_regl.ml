@@ -425,4 +425,4 @@ let update (m : model) (e : regl_input) =
       in
       (nm, audio nm, [])
 
-let _ = Ml_regl_js.Regl_js.create_app init update view
+let _ = Regl_backend.create_app init update view
