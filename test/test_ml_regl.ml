@@ -42,7 +42,6 @@ let audio_url = "/test/assets/test.ogg"
 let custom_program_name = "customFlat"
 
 let custom_program =
-  let float_value x = Js.Unsafe.inject (Js.number_of_float x) in
   {
     Regl_program.frag =
       {|
@@ -64,7 +63,7 @@ void main() {
     uniforms = Some [ ("color", DynamicValue "color") ];
     elements = None;
     primitive = None;
-    count = Some (StaticValue (float_value 3.0));
+    count = Some (Regl_program.static_number 3.0);
   }
 
 let _constructor_smoke : Regl.regl_output list =
