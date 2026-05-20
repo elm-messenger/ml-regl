@@ -1,3 +1,6 @@
 [submodule "ml-regl-js"]
 	path = ml-regl-js
 	url = git@github.com:elm-messenger/ml-regl-js
+[submodule "lib/proto"]
+	path = lib/proto
+	url = git@github.com:elm-messenger/decl-pb.git
