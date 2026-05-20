@@ -166,6 +166,8 @@ let texture_scene scene m =
         Color.black;
       Regl_builtin_programs.texture (80., 220.) (320., 220.) (320., 460.)
         (80., 460.) texture_name;
+      Regl_builtin_programs.texture_with_alpha (80., 500.) (320., 500.) (320., 740.)
+        (80., 740.) 0.65 texture_name;
       Regl_builtin_programs.rect_texture (360., 220.) (220., 240.) texture_name;
       Regl_builtin_programs.centered_texture (760., 340.) (240., 240.) 0.4
         texture_name;
@@ -182,6 +184,12 @@ let texture_scene scene m =
       Regl_builtin_programs.centered_texture_cropped_with_alpha (1260., 610.)
         (240., 180.) (-0.2) (0.1, 0.1) (0.3, 0.3) 0.85
         (if m.crop_texture_loaded then cropped_texture_name else texture_name);
+      Regl_builtin_programs.texture_cropped (360., 520.) (520., 520.) (520., 680.)
+        (360., 680.) (0.0, 1.0) (1.0, 1.0) (1.0, 0.0) (0.0, 0.0)
+        texture_name;
+      Regl_builtin_programs.texture_cropped_with_alpha (560., 520.) (720., 520.)
+        (720., 680.) (560., 680.) (0.0, 1.0) (1.0, 1.0) (1.0, 0.0)
+        (0.0, 0.0) 0.55 texture_name;
     ]
 
 let effect_scene scene m =
@@ -207,8 +215,23 @@ let effect_scene scene m =
   [
     Regl_common.group
       (Regl_effects.blur 1.5
-      @ [ Regl_effects.alpha_mult 0.9; Regl_effects.color_mult 0.95 0.95 1.0 1.0 ])
+      @ [
+          Regl_effects.alpha_mult 0.9;
+          Regl_effects.color_mult 0.95 0.95 1.0 1.0;
+          Regl_effects.pixilation 1.2;
+        ])
       [ base; texture_overlay ];
+    Regl_common.group
+      [
+        Regl_effects.blur_h 2.0;
+        Regl_effects.blur_v 2.0;
+        Regl_effects.gblur_h 0.8;
+        Regl_effects.gblur_v 0.8;
+      ]
+      [
+        Regl_builtin_programs.textbox_centered (960., 740.) 30.
+          "Effects: blur_h/blur_v + gblur_h/gblur_v" "consolas" Color.black;
+      ];
     Regl_common.group
       (Regl_effects.gblur 0.8 )
       [
@@ -246,6 +269,7 @@ let composite_scene scene m =
   in
   [
     Regl_compositors.dst_over_src left right;
+    Regl_compositors.mask_by_src left right;
     Regl_compositors.linear_fade
       ((sin (m.current_ts /. 500.0) +. 1.0) /. 2.0)
       left right;
