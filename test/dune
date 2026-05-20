@@ -36,3 +36,12 @@
  (js_of_ocaml
   (flags
    (:standard --opt=3))))
+
+; Native desktop smoke test — links against ml_regl_desktop, which in turn
+; pulls in libdeclgl.a (sibling C++ project) via (foreign_archives).
+(executable
+ (name test_desktop_smoke)
+ (modules test_desktop_smoke)
+ (libraries ml_regl_desktop)
+ (flags
+  (:standard -warn-error -A)))

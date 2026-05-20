@@ -1,62 +1,48 @@
-(* Native OCaml capture tool for the ml-regl protobuf wire protocol.
+(* Desktop facade for ml_regl. See regl_desktop.mli. *)
 
-   This program builds a small but representative ml-regl scene, drives it
-   through [Regl_runtime.Make] with a "file dump" host, and writes a binary
-   capture file containing every BackendCommandBatch / AudioCommandBatch /
-   Renderable that the scene produced. The C++ replay tool in
-   [declgl-desktop/tools/replay/] reads this file and pushes each record through
-   libdeclgl's C ABI to verify that the wire format is bit-faithful between the
-   JS-verified OCaml frontend and the new native backend.
-
-   File format (little-endian): magic "DGLCAP01" 8 bytes u32 record_count record
-   := u8 kind (1=BE_CMD, 2=AU_CMD, 3=VIEW) u64 ts_ms u32 len u8[] payload [len
-   bytes] *)
 open Ml_regl_core
+open Ml_regl_core.Regl_proto
 
-let magic = "DGLCAP01"
-let kind_be_cmd = 1
-let kind_au_cmd = 2
-let kind_view = 3
+(* The two primitives implemented by libdeclgl (declgl-desktop/src/caml_bridge).
+   Bytes-typed parameters are zero-copied via Bytes_val on the C side. There
+   is no separate "run loop" external — libdeclgl reacts to [StartRegl]
+   inside [declgl_ship_backend_cmd], opens the window, and enters its loop
+   right there. The call returns when the user closes the window. *)
+external declgl_ship_backend_cmd : bytes -> unit = "declgl_ship_backend_cmd"
+external declgl_ship_audio_cmd   : bytes -> unit = "declgl_ship_audio_cmd"
 
-(* Tiny LE writer over an out_channel. We pre-stage records into a buffer so the
-   final file gets a correct record_count header. *)
+let execCmdPb commands =
+  declgl_ship_backend_cmd (encode_backend_command_batch_pb commands)
 
-module BE = struct
-  let u8 buf v = Buffer.add_char buf (Char.chr (v land 0xff))
+let execAudioCmdPb actions =
+  declgl_ship_audio_cmd (Regl_audio.encode_command_batch_pb actions)
 
-  let u32 buf v =
-    u8 buf v;
-    u8 buf (v lsr 8);
-    u8 buf (v lsr 16);
-    u8 buf (v lsr 24)
-
-  let u64 buf v =
-    let lo = Int64.to_int (Int64.logand v 0xffffffffL) in
-    let hi = Int64.to_int (Int64.shift_right_logical v 32) in
-    u32 buf lo;
-    u32 buf hi
+(* The desktop host: byte-shippers go straight into the engine via the
+   external primitives above. There is no additional buffering. *)
+module DesktopHost = struct
+  let ship_backend_cmd payload = declgl_ship_backend_cmd payload
+  let ship_audio_cmd   payload = declgl_ship_audio_cmd   payload
 end
 
-(* The capture host: stash bytes into the staging buffer with a timestamp, keyed
-   by kind. Time source is provided externally so the driver loop can advance
-   virtual time deterministically. *)
+module DesktopRuntime = Regl_runtime.Make (DesktopHost)
 
-let now_ref = ref 0.0
-let staging = Buffer.create (1 lsl 16)
-let record_count = ref 0
+let create_app
+    (init   : unit -> 'a * regl_output list)
+    (update : 'a -> regl_input -> 'a * Regl_audio.audio * regl_output list)
+    (view   : 'a -> Regl_common.renderable) =
+  let h = DesktopRuntime.create_app ~init ~update ~view in
 
-let write_record kind payload =
-  let ts_ms = Int64.of_float !now_ref in
-  BE.u8 staging kind;
-  BE.u64 staging ts_ms;
-  let len = Bytes.length payload in
-  BE.u32 staging len;
-  Buffer.add_bytes staging payload;
-  incr record_count
+  (* C++ side resolves these by name with caml_named_value. The names
+     mirror the [MlApp] keys that the JS backend sees via
+     [Js.export "MlApp"]. *)
+  Callback.register "declgl_app_update"             h.update;
+  Callback.register "declgl_app_event"              h.event;
+  Callback.register "declgl_app_view"               h.view;
+  Callback.register "declgl_app_recv_regl_cmd_pb"   h.recv_regl_cmd_pb;
+  Callback.register "declgl_app_recv_audio_msg_pb"  h.recv_audio_msg_pb;
 
-module CaptureHost = struct
-  let ship_backend_cmd payload = write_record kind_be_cmd payload
-  let ship_audio_cmd payload = write_record kind_au_cmd payload
-end
-
-module Runtime = Regl_runtime.Make (CaptureHost)
+  (* Runs user-side init, ships the resulting BackendCommandBatch via
+     [declgl_ship_backend_cmd], which — upon seeing [StartRegl] — opens
+     the window and enters the C++ run loop. Returns only when the user
+     closes the window. *)
+  h.init ()

@@ -1,6 +1,5 @@
 open Ml_regl_core
 open Ml_regl_core.Regl_proto
-open Ml_regl_js
 
 type model = { texture_fail : bool; font_fail : bool; last_msg : string }
 
@@ -60,4 +59,4 @@ let view (m : model) =
            "consolas" (Color.rgb 0.7 0.4 0.0));
     ]
 
-let _ = Regl_js.create_app init update view
+let _ = Ml_regl_js.Regl_js.create_app init update view

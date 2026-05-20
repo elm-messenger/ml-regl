@@ -1,6 +1,5 @@
 open Ml_regl_core
 open Ml_regl_core.Regl_proto
-open Ml_regl_js
 
 type model = {
   current_ts : float;
@@ -177,4 +176,4 @@ let view (m : model) =
       overlay;
     ]
 
-let _ = Regl_js.create_app init update view
+let _ = Ml_regl_js.Regl_js.create_app init update view

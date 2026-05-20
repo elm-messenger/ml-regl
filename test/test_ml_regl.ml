@@ -1,6 +1,5 @@
 open Ml_regl_core
 open Ml_regl_core.Regl_proto
-open Ml_regl_js
 
 (* Demo: exercise most public APIs with multiple scenes. *)
 
@@ -426,4 +425,4 @@ let update (m : model) (e : regl_input) =
       in
       (nm, audio nm, [])
 
-let _ = Regl_js.create_app init update view
+let _ = Ml_regl_js.Regl_js.create_app init update view

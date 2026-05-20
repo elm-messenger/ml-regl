@@ -1,8 +1,59 @@
+; Desktop facade for ml_regl.
+;
+; Linkage strategy
+; ----------------
+;
+; The C++ side of this backend lives in the sibling project
+; `declgl-desktop/`. After running its CMake build, two artefacts are
+; produced under whichever build directory CMake was configured with
+; (e.g. build/mac-debug, build/mac-release, build/linux-debug, ...):
+;
+;     <DECLGL_BUILD_DIR>/libdeclgl.a
+;     <DECLGL_BUILD_DIR>/declgl_link_flags.sexp
+;
+; The first is a merged static archive of all first-party C++ code
+; (caml_bridge + engine + protobuf + glad). The second is an
+; S-expression list of -L/-l/-framework flags that resolves the
+; third-party deps (SDL3 + protobuf + abseil + platform frameworks).
+;
+; Where to find them is provided by the user via the `DECLGL_BUILD_DIR`
+; environment variable. There is intentionally no default — the user
+; must select the build configuration explicitly so that mac-debug,
+; mac-release, linux-*, etc. don't get silently confused. Typical use:
+;
+;     DECLGL_BUILD_DIR=$PWD/declgl-desktop/build/mac-debug   dune build
+;     DECLGL_BUILD_DIR=$PWD/declgl-desktop/build/mac-release dune build
+;     DECLGL_BUILD_DIR=$PWD/declgl-desktop/build/linux-release dune build
+;
+; The two `(rule)` blocks below copy those artefacts into the dune
+; workspace under the names `libdeclgl.a` and `declgl_link_flags.sexp`
+; that `(foreign_archives declgl)` and `(c_library_flags (:include …))`
+; expect. `(env_var DECLGL_BUILD_DIR)` registers the var as a rule
+; dependency, so flipping configurations triggers a rebuild without a
+; manual `dune clean`.
+
+(rule
+ (targets libdeclgl.a)
+ (deps (env_var DECLGL_BUILD_DIR))
+ (action
+  (bash
+   "cp \"${DECLGL_BUILD_DIR}/libdeclgl.a\" %{targets}")))
+
+(rule
+ (targets declgl_link_flags.sexp)
+ (deps (env_var DECLGL_BUILD_DIR))
+ (action
+  (bash
+   "cp \"${DECLGL_BUILD_DIR}/declgl_link_flags.sexp\" %{targets}")))
 
 (library
  (name ml_regl_desktop)
  (public_name regl_desktop)
  (modules regl_desktop)
+ (modes native)
  (libraries ml_regl_core)
+ (foreign_archives declgl)
+ (c_library_flags
+  (:include declgl_link_flags.sexp))
  (flags
   (:standard -warn-error -A)))
