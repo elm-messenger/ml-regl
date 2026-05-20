@@ -29,8 +29,11 @@ type texture = { name : string; width : int; height : int }
 
 type regl_recv_msg =
   | REGLTextureLoaded of texture
+  | REGLTextureLoadFail of string
   | REGLFontLoaded of string
+  | REGLFontLoadFail of string
   | REGLProgramCreated of string
+  | REGLProgramCreateFail of string
 
 module Backend_pb = Transport_backend.Mlregl.Transport.Backend
 module Common_pb = Transport_common.Mlregl.Transport.Common
@@ -98,8 +101,11 @@ let decode_backend_event_pb (payload : bytes) : regl_recv_msg option =
     match Backend_pb.BackendEvent.from_proto_exn reader with
     | `Texture_loaded { name; width; height } ->
         Some (REGLTextureLoaded { name; width; height })
+    | `Texture_loadfail name -> Some (REGLTextureLoadFail name)
     | `Font_loaded name -> Some (REGLFontLoaded name)
+    | `Font_loadfail name -> Some (REGLFontLoadFail name)
     | `Program_created name -> Some (REGLProgramCreated name)
+    | `Program_createfail name -> Some (REGLProgramCreateFail name)
     | `not_set -> None
   with _ -> None
 

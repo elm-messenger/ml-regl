@@ -23,3 +23,16 @@
  (js_of_ocaml
   (flags
    (:standard --opt=3))))
+
+(executable
+ (name test_failures_ml_regl)
+ (modules test_failures_ml_regl)
+ (libraries js_of_ocaml ml_regl)
+ (modes js)
+ (preprocess
+  (pps js_of_ocaml-ppx))
+ (flags
+  (:standard -warn-error -A))
+ (js_of_ocaml
+  (flags
+   (:standard --opt=3))))

@@ -29,8 +29,11 @@ type texture = { name : string; width : int; height : int }
 
 type regl_recv_msg =
   | REGLTextureLoaded of texture
+  | REGLTextureLoadFail of string
   | REGLFontLoaded of string
+  | REGLFontLoadFail of string
   | REGLProgramCreated of string
+  | REGLProgramCreateFail of string
 
 module Backend_pb = Transport_backend.Mlregl.Transport.Backend
 
