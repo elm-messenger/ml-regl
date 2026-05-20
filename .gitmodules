@@ -3,4 +3,4 @@
 	url = git@github.com:elm-messenger/ml-regl-js
 [submodule "lib/proto"]
 	path = lib/proto
-	url = git@github.com:elm-messenger/decl-pb.git
+	url = git@github.com:elm-messenger/declgl-pb.git
