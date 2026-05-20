@@ -1,32 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ml-regl tests</title>
+    <style>
+      body {
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+          Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        margin: 24px;
+      }
+      ul {
+        line-height: 1.8;
+      }
+    </style>
+  </head>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <script src="_build/default/test/test_ml_regl.bc.js"></script>
-    <script src="ml-regl-js/build/regl.js"></script>
-</head>
-
-<body>
-    <canvas id="myCanvas"></canvas>
-    <script>
-        const canvas = document.getElementById('myCanvas');
-        MlApp.bind(canvas);
-        MlREGL.init(canvas, MlApp, []);
-
-        MlApp.init(); // Start REGL. Optional argument: initial message.
-
-        addEventListener("resize", (event) => {
-            MlApp.event(event);
-        });
-
-        canvas.addEventListener("click", (event) => {
-            MlApp.event(event);
-        });
-
-    </script>
-</body>
-
+  <body>
+    <h1>ml-regl tests</h1>
+    <ul>
+      <li><a href="html/test_ml_regl.html">test_ml_regl</a></li>
+      <li><a href="html/test_stress_ml_regl.html">test_stress_ml_regl</a></li>
+    </ul>
+  </body>
 </html>

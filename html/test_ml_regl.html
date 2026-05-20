@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ml-regl: test_ml_regl</title>
+    <script src="/_build/default/test/test_ml_regl.bc.js"></script>
+    <script src="/ml-regl-js/build/regl.js"></script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="myCanvas"></canvas>
+    <script>
+      const canvas = document.getElementById("myCanvas");
+      MlApp.bind(canvas);
+      MlREGL.init(canvas, MlApp, []);
+      MlApp.init();
+
+      addEventListener("resize", (event) => {
+        MlApp.event(event);
+      });
+
+      canvas.addEventListener("click", (event) => {
+        MlApp.event(event);
+      });
+    </script>
+  </body>
+</html>
+

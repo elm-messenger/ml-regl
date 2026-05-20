@@ -37,8 +37,8 @@ let initial_model =
 
 let texture_name = "enemy"
 let cropped_texture_name = "enemy-crop"
-let texture_url = "test/assets/enemy.png"
-let audio_url = "test/assets/test.ogg"
+let texture_url = "/test/assets/enemy.png"
+let audio_url = "/test/assets/test.ogg"
 let custom_program_name = "customFlat"
 
 let custom_program =
