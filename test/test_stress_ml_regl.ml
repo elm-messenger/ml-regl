@@ -1,5 +1,6 @@
-open Ml_regl
-open Js_of_ocaml
+open Ml_regl_core
+open Ml_regl_core.Regl_proto
+open Ml_regl_js
 
 type model = {
   current_ts : float;
@@ -29,7 +30,7 @@ let compute_fps times =
       let oldest = List.hd (List.rev times) in
       let frame_count = float_of_int (List.length times - 1) in
       let dt_ms = newest -. oldest in
-      if dt_ms <= 0.0 then 0.0 else (frame_count *. 1000.0) /. dt_ms
+      if dt_ms <= 0.0 then 0.0 else frame_count *. 1000.0 /. dt_ms
 
 let build_triangles ~virt_width ~virt_height =
   let cols = 48 in
@@ -70,10 +71,10 @@ let build_sprites ~virt_width ~virt_height =
   let sprite_in_cell i j =
     let cx = (float_of_int i +. 0.5) *. cell_w in
     let cy = (float_of_int j +. 0.5) *. cell_h in
-    let angle = (float_of_int (i - j)) *. 0.05 in
+    let angle = float_of_int (i - j) *. 0.05 in
     let alpha = 0.55 +. (0.35 *. (float_of_int ((i + j) mod 7) /. 6.0)) in
-    Regl_builtin_programs.centered_texture_with_alpha (cx, cy) (size, size) angle
-      alpha texture_name
+    Regl_builtin_programs.centered_texture_with_alpha (cx, cy) (size, size)
+      angle alpha texture_name
   in
   let rec loop_j j acc =
     if j >= rows then List.rev acc
@@ -94,55 +95,60 @@ let initial_model ~virt_width ~virt_height =
     sprites = build_sprites ~virt_width ~virt_height;
   }
 
-let init (canvas : Dom_html.canvasElement Js.t option) =
-  let startconfig : Regl.regl_start_config =
-    { virt_width = 1920.0; virt_height = 1080.0; fbo_num = 6; builtin_programs = None }
+let init () =
+  let startconfig : regl_start_config =
+    {
+      virt_width = 1920.0;
+      virt_height = 1080.0;
+      fbo_num = 6;
+      builtin_programs = None;
+    }
   in
-  let mc = Option.get canvas in
-  mc##.width := 1280;
-  mc##.height := 720;
   let m =
-    initial_model ~virt_width:startconfig.virt_width ~virt_height:startconfig.virt_height
+    initial_model ~virt_width:startconfig.virt_width
+      ~virt_height:startconfig.virt_height
   in
   ( m,
     [
-      Regl.start_regl startconfig;
-      Regl.config_regl { time_interval = Millisecond 16.0 };
-      Regl.load_texture texture_name texture_url None;
+      start_regl startconfig;
+      config_regl { time_interval = Millisecond 16.0 };
+      load_texture texture_name texture_url None;
     ] )
 
-let update (_canvas : Dom_html.canvasElement Js.t option) (m : model)
-    (e : Regl.regl_input) =
+let update (m : model) (e : regl_input) =
   match e with
-  | Regl.Tick ts ->
+  | Event (UpdateTick ts) ->
       let tick_times = take 10 (ts :: m.tick_times) in
       ({ m with current_ts = ts; tick_times }, Regl_audio.silence, [])
-  | Regl.Event _ -> (m, Regl_audio.silence, [])
-  | Regl.REGLRecvMsg msg ->
+  | Event _ -> (m, Regl_audio.silence, [])
+  | REGLRecvMsg msg ->
       let m =
         match msg with
-        | Regl.REGLTextureLoaded t when t.name = texture_name ->
+        | REGLTextureLoaded t when t.name = texture_name ->
             { m with texture_loaded = true }
         | _ -> m
       in
       (m, Regl_audio.silence, [])
-  | Regl.AudioMsg _ -> (m, Regl_audio.silence, [])
+  | AudioMsg _ -> (m, Regl_audio.silence, [])
 
 let view (m : model) =
   let scene =
-    if (int_of_float (m.current_ts /. 4000.0)) mod 2 = 0 then TrianglesOnly
+    if int_of_float (m.current_ts /. 4000.0) mod 2 = 0 then TrianglesOnly
     else SpritesOnly
   in
   let fps = compute_fps m.tick_times in
   let tri_count = List.length m.triangles in
   let sprite_count = if m.texture_loaded then List.length m.sprites else 0 in
-  let scene_label = match scene with TrianglesOnly -> "triangles" | SpritesOnly -> "sprites" in
+  let scene_label =
+    match scene with TrianglesOnly -> "triangles" | SpritesOnly -> "sprites"
+  in
   let fps_text =
     Printf.sprintf "FPS(10): %.1f | scene=%s | triangles=%d | sprites=%d" fps
       scene_label tri_count sprite_count
   in
   let overlay =
-    Regl_builtin_programs.textbox (16.0, 32.0) 26.0 fps_text "consolas" Color.black
+    Regl_builtin_programs.textbox (16.0, 32.0) 26.0 fps_text "consolas"
+      Color.black
   in
   let t = m.current_ts /. 1000.0 in
   let camera =
@@ -171,4 +177,4 @@ let view (m : model) =
       overlay;
     ]
 
-let _ = Regl.create_app init update view
+let _ = Regl_js.create_app init update view

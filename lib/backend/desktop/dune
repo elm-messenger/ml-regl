@@ -1,0 +1,8 @@
+
+(library
+ (name ml_regl_desktop)
+ (public_name regl_desktop)
+ (modules regl_desktop)
+ (libraries ml_regl_core)
+ (flags
+  (:standard -warn-error -A)))

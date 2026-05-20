@@ -1,17 +1,14 @@
-open Ml_regl
-open Js_of_ocaml
+open Ml_regl_core
+open Ml_regl_core.Regl_proto
+open Ml_regl_js
 
-type model = {
-  texture_fail : bool;
-  font_fail : bool;
-  last_msg : string;
-}
+type model = { texture_fail : bool; font_fail : bool; last_msg : string }
 
 let missing_texture_name = "missing-texture"
 let missing_font_name = "missing-font"
 
-let init (canvas : Dom_html.canvasElement Js.t option) =
-  let startconfig : Regl.regl_start_config =
+let init () =
+  let startconfig : regl_start_config =
     {
       virt_width = 1280.0;
       virt_height = 720.0;
@@ -19,28 +16,24 @@ let init (canvas : Dom_html.canvasElement Js.t option) =
       builtin_programs = None;
     }
   in
-  let mc = Option.get canvas in
-  mc##.width := 1280;
-  mc##.height := 720;
   ( { texture_fail = false; font_fail = false; last_msg = "loading..." },
     [
-      Regl.start_regl startconfig;
-      Regl.config_regl { time_interval = Millisecond 16.0 };
-      Regl.load_texture missing_texture_name "/test/assets/DOES_NOT_EXIST.png" None;
-      Regl.load_font missing_font_name "/test/assets/DOES_NOT_EXIST.png"
+      start_regl startconfig;
+      config_regl { time_interval = Millisecond 16.0 };
+      load_texture missing_texture_name "/test/assets/DOES_NOT_EXIST.png" None;
+      load_font missing_font_name "/test/assets/DOES_NOT_EXIST.png"
         "/test/assets/DOES_NOT_EXIST.json";
     ] )
 
-let update (_canvas : Dom_html.canvasElement Js.t option) (m : model)
-    (e : Regl.regl_input) =
+let update (m : model) (e : regl_input) =
   match e with
-  | Regl.REGLRecvMsg msg -> (
+  | REGLRecvMsg msg -> (
       match msg with
-      | Regl.REGLTextureLoadFail name when name = missing_texture_name ->
+      | REGLTextureLoadFail name when name = missing_texture_name ->
           ( { m with texture_fail = true; last_msg = "texture load failed" },
             Regl_audio.silence,
             [] )
-      | Regl.REGLFontLoadFail name when name = missing_font_name ->
+      | REGLFontLoadFail name when name = missing_font_name ->
           ( { m with font_fail = true; last_msg = "font load failed" },
             Regl_audio.silence,
             [] )
@@ -49,8 +42,8 @@ let update (_canvas : Dom_html.canvasElement Js.t option) (m : model)
 
 let view (m : model) =
   let status =
-    Printf.sprintf "missing texture: %b | missing font: %b | %s"
-      m.texture_fail m.font_fail m.last_msg
+    Printf.sprintf "missing texture: %b | missing font: %b | %s" m.texture_fail
+      m.font_fail m.last_msg
   in
   Regl_common.group []
     [
@@ -67,5 +60,4 @@ let view (m : model) =
            "consolas" (Color.rgb 0.7 0.4 0.0));
     ]
 
-let _ = Regl.create_app init update view
-
+let _ = Regl_js.create_app init update view

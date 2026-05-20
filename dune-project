@@ -18,17 +18,41 @@
 (documentation https://github.com/elm-messenger/ml-regl)
 
 (package
- (name regl)
- (synopsis "OCaml bindings for the regl WebGL library")
+ (name regl_js)
+ (synopsis "JS backend for ml_regl")
  (description
   "This library provides OCaml bindings for the regl WebGL library, enabling functional and declarative graphics programming in web applications using OCaml.")
  (depends
   ("ocaml" (>= 4.13))
   ("dune" (>= 3.19))
-  "ocaml-protoc-plugin"
   "js_of_ocaml"
-  "js_of_ocaml-ppx")
+  "js_of_ocaml-ppx"
+  "ml_regl_core")
  (tags
   (graphics web webgl bindings regl)))
+
+(package
+ (name regl_desktop)
+ (synopsis "Desktop backend for ml_regl")
+ (description
+  "This library provides OCaml bindings for the regl WebGL library, enabling functional and declarative graphics programming in desktop applications using OCaml.")
+ (depends
+  ("ocaml" (>= 4.13))
+  ("dune" (>= 3.19))
+  "ml_regl_core")
+ (tags
+  (graphics protobuf bindings regl)))
+
+(package
+ (name ml_regl_core)
+ (synopsis "Portable core of ml_regl (protobuf wire format, no js_of_ocaml)")
+ (description
+  "Pure OCaml core of ml_regl: smart constructors for backend commands and protobuf encoders/decoders. Has no Js_of_ocaml dependency so it can be linked from native backends such as declgl-desktop.")
+ (depends
+  ("ocaml" (>= 4.13))
+  ("dune" (>= 3.19))
+  "ocaml-protoc-plugin")
+ (tags
+  (graphics protobuf bindings regl)))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/reference/dune-project/index.html

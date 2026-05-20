@@ -13,8 +13,17 @@
  (action
   (run protoc -I proto --ocaml_out=. %{protos})))
 
+; Portable core: protobuf wire format + smart constructors. NO js_of_ocaml,
+; so this library can be linked into native consumers (e.g. declgl-desktop).
+;
+; (wrapped false) so the existing test files (and the [Regl] facade)
+; can keep referring to [Regl_audio], [Regl_common], [Regl_proto], [Color],
+; etc. as bare top-level module names, exactly like before the split.
+
 (library
- (name ml_regl)
+ (name ml_regl_core)
+ (public_name ml_regl_core)
+ ;  (wrapped false)
  (modules
   color
   regl_common
@@ -26,12 +35,9 @@
   transport_backend
   transport_render
   transport_common
-  regl_transport
   regl_audio
-  regl)
- (libraries js_of_ocaml ocaml-protoc-plugin)
- (public_name regl)
- (preprocess
-  (pps js_of_ocaml-ppx))
+  regl_proto
+  regl_runtime)
+ (libraries ocaml-protoc-plugin)
  (flags
   (:standard -warn-error -A)))

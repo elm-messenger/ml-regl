@@ -1,5 +1,6 @@
-open Ml_regl
-open Js_of_ocaml
+open Ml_regl_core
+open Ml_regl_core.Regl_proto
+open Ml_regl_js
 
 (* Demo: exercise most public APIs with multiple scenes. *)
 
@@ -66,11 +67,11 @@ void main() {
     count = Some (Regl_program.static_number 3.0);
   }
 
-let _constructor_smoke : Regl.regl_output list =
-  [ Regl.load_font "demo-font" "unused.png" "unused.json" ]
+let _constructor_smoke : regl_output list =
+  [ load_font "demo-font" "unused.png" "unused.json" ]
 
 let scene_of_time ts =
-  match (int_of_float (ts /. 1800.0)) mod 7 with
+  match int_of_float (ts /. 1800.0) mod 7 with
   | 0 -> GeometryScene
   | 1 -> TextScene
   | 2 -> TextureScene
@@ -100,8 +101,8 @@ let geometry_scene () =
   [
     Regl_builtin_programs.triangle (120., 120.) (260., 300.) (60., 320.)
       (Color.rgb 0.9 0.3 0.3);
-    Regl_builtin_programs.quad (320., 120.) (460., 120.) (460., 260.) (320., 260.)
-      (Color.rgb 0.3 0.8 0.4);
+    Regl_builtin_programs.quad (320., 120.) (460., 120.) (460., 260.)
+      (320., 260.) (Color.rgb 0.3 0.8 0.4);
     Regl_builtin_programs.rect (520., 120.) (180., 100.) (Color.rgb 0.2 0.5 0.9);
     Regl_builtin_programs.rect_centered (860., 180.) (180., 90.) 0.45
       (Color.rgba 0.9 0.6 0.2 0.9);
@@ -118,7 +119,9 @@ let geometry_scene () =
       [ (760., 380.); (840., 420.); (900., 360.); (980., 520.); (1080., 470.) ]
       (Color.rgb 0.0 0.6 0.8);
     Regl_builtin_programs.lineloop
-      [ (1200., 380.); (1320., 410.); (1370., 520.); (1260., 570.); (1160., 500.) ]
+      [
+        (1200., 380.); (1320., 410.); (1370., 520.); (1260., 570.); (1160., 500.);
+      ]
       (Color.rgb 0.7 0.1 0.1);
     curve;
   ]
@@ -129,7 +132,8 @@ let text_scene scene =
       Regl_builtin_programs.default_textbox_option with
       fonts = [ "consolas"; "arial" ];
       text =
-        "textbox_pro supports options like width, lineHeight,\nletterSpacing, and wordBreak.";
+        "textbox_pro supports options like width, lineHeight,\n\
+         letterSpacing, and wordBreak.";
       size = 28.0;
       color = Color.black;
       word_break = true;
@@ -141,8 +145,8 @@ let text_scene scene =
     }
   in
   [
-    Regl_builtin_programs.textbox (180., 140.) 32. (header_text scene) "consolas"
-      Color.black;
+    Regl_builtin_programs.textbox (180., 140.) 32. (header_text scene)
+      "consolas" Color.black;
     Regl_builtin_programs.textbox_mf (180., 220.) 28.
       "textbox_mf with fallback font list" [ "consolas"; "arial" ]
       (Color.rgb 0.2 0.2 0.8);
@@ -156,39 +160,40 @@ let text_scene scene =
 let texture_scene scene m =
   let fallback =
     Regl_builtin_programs.textbox_centered (960., 540.) 42.
-      ("Waiting for textures in " ^ scene_label scene) "consolas" Color.black
+      ("Waiting for textures in " ^ scene_label scene)
+      "consolas" Color.black
   in
   if not m.texture_loaded then [ fallback ]
   else
     [
-      Regl_builtin_programs.textbox (160., 110.) 30. (header_text scene) "consolas"
-        Color.black;
+      Regl_builtin_programs.textbox (160., 110.) 30. (header_text scene)
+        "consolas" Color.black;
       Regl_builtin_programs.texture (80., 220.) (320., 220.) (320., 460.)
         (80., 460.) texture_name;
-      Regl_builtin_programs.texture_with_alpha (80., 500.) (320., 500.) (320., 740.)
-        (80., 740.) 0.65 texture_name;
+      Regl_builtin_programs.texture_with_alpha (80., 500.) (320., 500.)
+        (320., 740.) (80., 740.) 0.65 texture_name;
       Regl_builtin_programs.rect_texture (360., 220.) (220., 240.) texture_name;
       Regl_builtin_programs.centered_texture (760., 340.) (240., 240.) 0.4
         texture_name;
-      Regl_builtin_programs.rect_texture_with_alpha (920., 220.) (220., 240.) 0.6
-        texture_name;
-      Regl_builtin_programs.centered_texture_with_alpha (1240., 340.) (240., 240.)
-        (-0.35) 0.75 texture_name;
+      Regl_builtin_programs.rect_texture_with_alpha (920., 220.) (220., 240.)
+        0.6 texture_name;
+      Regl_builtin_programs.centered_texture_with_alpha (1240., 340.)
+        (240., 240.) (-0.35) 0.75 texture_name;
       Regl_builtin_programs.rect_texture_cropped (180., 520.) (240., 180.)
         (0.05, 0.05) (0.45, 0.45) texture_name;
-      Regl_builtin_programs.centered_texture_cropped (620., 610.) (240., 180.) 0.25
-        (0.15, 0.1) (0.5, 0.35) texture_name;
-      Regl_builtin_programs.rect_texture_cropped_with_alpha (930., 520.) (240., 180.)
-        (0.2, 0.15) (0.45, 0.4) 0.7 texture_name;
+      Regl_builtin_programs.centered_texture_cropped (620., 610.) (240., 180.)
+        0.25 (0.15, 0.1) (0.5, 0.35) texture_name;
+      Regl_builtin_programs.rect_texture_cropped_with_alpha (930., 520.)
+        (240., 180.) (0.2, 0.15) (0.45, 0.4) 0.7 texture_name;
       Regl_builtin_programs.centered_texture_cropped_with_alpha (1260., 610.)
         (240., 180.) (-0.2) (0.1, 0.1) (0.3, 0.3) 0.85
         (if m.crop_texture_loaded then cropped_texture_name else texture_name);
-      Regl_builtin_programs.texture_cropped (360., 520.) (520., 520.) (520., 680.)
-        (360., 680.) (0.0, 1.0) (1.0, 1.0) (1.0, 0.0) (0.0, 0.0)
+      Regl_builtin_programs.texture_cropped (360., 520.) (520., 520.)
+        (520., 680.) (360., 680.) (0.0, 1.0) (1.0, 1.0) (1.0, 0.0) (0.0, 0.0)
         texture_name;
       Regl_builtin_programs.texture_cropped_with_alpha (560., 520.) (720., 520.)
-        (720., 680.) (560., 680.) (0.0, 1.0) (1.0, 1.0) (1.0, 0.0)
-        (0.0, 0.0) 0.55 texture_name;
+        (720., 680.) (560., 680.) (0.0, 1.0) (1.0, 1.0) (1.0, 0.0) (0.0, 0.0)
+        0.55 texture_name;
     ]
 
 let effect_scene scene m =
@@ -196,7 +201,8 @@ let effect_scene scene m =
     Regl_common.group []
       [
         Regl_builtin_programs.clear (Color.rgb 0.95 0.97 1.0);
-        Regl_builtin_programs.rect (220., 180.) (420., 260.) (Color.rgb 0.9 0.2 0.3);
+        Regl_builtin_programs.rect (220., 180.) (420., 260.)
+          (Color.rgb 0.9 0.2 0.3);
         Regl_builtin_programs.circle (840., 310.) 120. (Color.rgb 0.2 0.7 0.9);
         Regl_builtin_programs.rounded_rect (1110., 180.) (360., 220.) 24.
           (Color.rgb 0.2 0.3 0.8);
@@ -206,10 +212,9 @@ let effect_scene scene m =
   in
   let texture_overlay =
     if m.texture_loaded then
-      Regl_builtin_programs.centered_texture_with_alpha (960., 350.) (300., 300.) 0.0
-        0.35 texture_name
-    else
-      Regl_builtin_programs.empty
+      Regl_builtin_programs.centered_texture_with_alpha (960., 350.)
+        (300., 300.) 0.0 0.35 texture_name
+    else Regl_builtin_programs.empty
   in
   [
     Regl_common.group
@@ -231,8 +236,7 @@ let effect_scene scene m =
         Regl_builtin_programs.textbox_centered (960., 740.) 30.
           "Effects: blur_h/blur_v + gblur_h/gblur_v" "consolas" Color.black;
       ];
-    Regl_common.group
-      (Regl_effects.gblur 0.8 )
+    Regl_common.group (Regl_effects.gblur 0.8)
       [
         Regl_builtin_programs.textbox_centered (960., 820.) 32.
           "Effects: blur, alpha_mult, color_mult, outline, fxaa" "consolas"
@@ -242,7 +246,8 @@ let effect_scene scene m =
 
 let composite_scene scene m =
   let left =
-    Regl_common.group [ Regl_effects.color_mult 1.0 0.8 0.8 1.0 ]
+    Regl_common.group
+      [ Regl_effects.color_mult 1.0 0.8 0.8 1.0 ]
       [
         Regl_builtin_programs.rect_centered (760., 420.) (420., 260.) 0.2
           (Color.rgb 0.9 0.3 0.3);
@@ -250,20 +255,21 @@ let composite_scene scene m =
       ]
   in
   let right =
-    Regl_common.group [ Regl_effects.alpha_mult 0.9 ]
+    Regl_common.group
+      [ Regl_effects.alpha_mult 0.9 ]
       [
         Regl_builtin_programs.rounded_rect (920., 260.) (380., 280.) 28.
           (Color.rgb 0.2 0.4 0.9);
         (if m.texture_loaded then
            Regl_builtin_programs.centered_texture_with_alpha (1100., 420.)
              (220., 220.) (-0.1) 0.8 texture_name
-         else
-           Regl_builtin_programs.empty);
+         else Regl_builtin_programs.empty);
       ]
   in
   let bottom =
     Regl_builtin_programs.textbox_centered (960., 820.) 30.
-      ("Compositors: dst_over_src, linear_fade, img_fade in " ^ scene_label scene)
+      ("Compositors: dst_over_src, linear_fade, img_fade in "
+     ^ scene_label scene)
       "consolas" Color.black
   in
   [
@@ -293,13 +299,14 @@ let camera_scene scene =
     Regl_common.group_with_camera camera
       (Regl_effects.gblur 0.8 @ [ Regl_effects.crt 320.0 ])
       [
-        Regl_builtin_programs.rect (180., 180.) (280., 160.) (Color.rgb 0.8 0.2 0.2);
+        Regl_builtin_programs.rect (180., 180.) (280., 160.)
+          (Color.rgb 0.8 0.2 0.2);
         Regl_builtin_programs.poly
           [ (780., 220.); (980., 150.); (1120., 280.); (900., 360.) ]
           (Color.rgb 0.2 0.8 0.5);
         Regl_builtin_programs.textbox_centered (960., 720.) 34.
-          ("Camera + group_with_camera in " ^ scene_label scene) "consolas"
-          Color.white;
+          ("Camera + group_with_camera in " ^ scene_label scene)
+          "consolas" Color.white;
       ];
   ]
 
@@ -353,8 +360,8 @@ let audio (m : model) : Regl_audio.audio =
   | Loaded src, Some t -> Regl_audio.audio src t
   | _ -> Regl_audio.silence
 
-let init (canvas : Dom_html.canvasElement Js.t option) =
-  let startconfig : Regl.regl_start_config =
+let init () =
+  let startconfig : regl_start_config =
     {
       virt_width = 1920.;
       virt_height = 1080.;
@@ -362,68 +369,61 @@ let init (canvas : Dom_html.canvasElement Js.t option) =
       builtin_programs = None;
     }
   in
-  let mc = Option.get canvas in
-  mc##.width := 1280;
-  mc##.height := 720;
   let texture_opts =
     Some
       {
-        Regl.mag = Some MagNearest;
+        mag = Some MagNearest;
         min = Some MinLinear;
         crop = Some ((0, 0), (32, 32));
       }
   in
   ( initial_model,
     [
-      Regl.start_regl startconfig;
-      Regl.config_regl { time_interval = Millisecond 16.0 };
-      Regl.load_texture texture_name texture_url None;
-      Regl.load_texture cropped_texture_name texture_url texture_opts;
-      Regl.load_audio audio_url;
-      Regl.create_regl_program custom_program_name custom_program;
+      start_regl startconfig;
+      config_regl { time_interval = Millisecond 16.0 };
+      load_texture texture_name texture_url None;
+      load_texture cropped_texture_name texture_url texture_opts;
+      load_audio audio_url;
+      create_regl_program custom_program_name custom_program;
     ] )
 
-let update (_canvas : Dom_html.canvasElement Js.t option) (m : model)
-    (e : Regl.regl_input) =
+let update (m : model) (e : regl_input) =
   match e with
-  | Regl.Tick ts ->
+  | Event (UpdateTick ts) ->
       let nm = { m with current_ts = ts; scene = scene_of_time ts } in
       (nm, audio nm, [])
-  | Regl.Event event ->
-      let ty = Js.to_string event##._type in
+  | Event (KeyDown _) ->
       let nm =
-        if ty = "click" || ty = "mousedown" || ty = "touchstart" then
-          match m.sound with
-          | Loaded _ ->
-              (* Use the latest Tick timestamp as the absolute clock. *)
-              let now = m.current_ts in
-              { m with play_at = Some now }
-          | _ -> m
-        else m
+        match m.sound with
+        | Loaded _ ->
+            (* Use the latest Tick timestamp as the absolute clock. *)
+            let now = m.current_ts in
+            { m with play_at = Some now }
+        | _ -> m
       in
       (nm, audio nm, [])
-  | Regl.REGLRecvMsg msg ->
+  | Event _ -> (m, audio m, [])
+  | REGLRecvMsg msg ->
       let nm =
         match msg with
-        | Regl.REGLTextureLoaded t when t.name = texture_name ->
+        | REGLTextureLoaded t when t.name = texture_name ->
             { m with texture_loaded = true }
-        | Regl.REGLTextureLoaded t when t.name = cropped_texture_name ->
+        | REGLTextureLoaded t when t.name = cropped_texture_name ->
             { m with crop_texture_loaded = true }
-        | Regl.REGLProgramCreated name when name = custom_program_name ->
+        | REGLProgramCreated name when name = custom_program_name ->
             { m with custom_program_ready = true }
         | _ -> m
       in
       (nm, audio nm, [])
-  | Regl.AudioMsg msg ->
+  | AudioMsg msg ->
       let nm =
         match msg with
-        | Regl.AudioLoadSuccess { audio_url = url; source } when url = audio_url
-          ->
+        | AudioLoadSuccess { audio_url = url; source } when url = audio_url ->
             { m with sound = Loaded source }
-        | Regl.AudioLoadFailed { audio_url = url; _ } when url = audio_url ->
+        | AudioLoadFailed { audio_url = url; _ } when url = audio_url ->
             { m with sound = Failed }
         | _ -> m
       in
       (nm, audio nm, [])
 
-let _ = Regl.create_app init update view
+let _ = Regl_js.create_app init update view

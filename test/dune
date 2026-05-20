@@ -1,7 +1,7 @@
 (executable
  (name test_ml_regl)
  (modules test_ml_regl)
- (libraries js_of_ocaml ml_regl)
+ (libraries js_of_ocaml ml_regl_js)
  (modes js)
  (preprocess
   (pps js_of_ocaml-ppx))
@@ -14,7 +14,7 @@
 (executable
  (name test_stress_ml_regl)
  (modules test_stress_ml_regl)
- (libraries js_of_ocaml ml_regl)
+ (libraries js_of_ocaml ml_regl_js)
  (modes js)
  (preprocess
   (pps js_of_ocaml-ppx))
@@ -27,7 +27,7 @@
 (executable
  (name test_failures_ml_regl)
  (modules test_failures_ml_regl)
- (libraries js_of_ocaml ml_regl)
+ (libraries js_of_ocaml ml_regl_js)
  (modes js)
  (preprocess
   (pps js_of_ocaml-ppx))

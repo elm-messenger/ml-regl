@@ -22,8 +22,7 @@ let static_number n =
 let static_string s =
   StaticValue (Common_pb.Value.make ~kind:(`String_value s) ())
 
-let static_bool b =
-  StaticValue (Common_pb.Value.make ~kind:(`Bool_value b) ())
+let static_bool b = StaticValue (Common_pb.Value.make ~kind:(`Bool_value b) ())
 
 let static_numbers values =
   let arr = Common_pb.ScalarArray.make ~values () in
@@ -73,14 +72,9 @@ let make_effect_simple frag uniforms =
       "precision mediump float; attribute vec2 uv; varying vec2 vuv; void \
        main() { vuv = uv; gl_Position = vec4(uv * 2. - 1., 0, 1);}";
     attributes =
-      Some
-        [
-          ( "uv",
-            static_numbers [ 1.0; 1.0; 1.0; 0.0; 0.0; 0.0; 0.0; 1.0 ] );
-        ];
+      Some [ ("uv", static_numbers [ 1.0; 1.0; 1.0; 0.0; 0.0; 0.0; 0.0; 1.0 ]) ];
     uniforms = Some (("texture", DynamicValue "texture") :: uniforms);
-    elements =
-      Some (static_numbers [ 0.0; 1.0; 2.0; 0.0; 2.0; 3.0 ]);
+    elements = Some (static_numbers [ 0.0; 1.0; 2.0; 0.0; 2.0; 3.0 ]);
     primitive = None;
     count = None;
   }
@@ -100,15 +94,10 @@ let make_compositor_simple frag uniforms =
       "precision mediump float; attribute vec2 uv; varying vec2 vuv; void \
        main() { vuv = uv; gl_Position = vec4(uv * 2. - 1., 0, 1);}";
     attributes =
-      Some
-        [
-          ( "uv",
-            static_numbers [ 1.0; 1.0; 1.0; 0.0; 0.0; 0.0; 0.0; 1.0 ] );
-        ];
+      Some [ ("uv", static_numbers [ 1.0; 1.0; 1.0; 0.0; 0.0; 0.0; 0.0; 1.0 ]) ];
     uniforms =
       Some (("t1", DynamicValue "t1") :: ("t2", DynamicValue "t2") :: uniforms);
-    elements =
-      Some (static_numbers [ 0.0; 1.0; 2.0; 0.0; 2.0; 3.0 ]);
+    elements = Some (static_numbers [ 0.0; 1.0; 2.0; 0.0; 2.0; 3.0 ]);
     primitive = None;
     count = None;
   }
