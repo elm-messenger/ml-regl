@@ -3,7 +3,7 @@
 	url = git@github.com:elm-messenger/ml-regl-js
 [submodule "decl-desktop"]
 	path = decl-desktop
-	url = git@github.com:elm-messenger/decl-desktop
+	url = git@github.com:elm-messenger/declgl-desktop
 [submodule "lib/proto"]
 	path = lib/proto
 	url = git@github.com:elm-messenger/declgl-pb.git
