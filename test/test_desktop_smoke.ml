@@ -11,6 +11,8 @@ open Ml_regl_core.Regl_proto
 type model = {
   ts : float;
   events : int;
+  frame : int;
+  late_load_shipped : bool;
 }
 
 let virt_w = 800.0
@@ -41,40 +43,50 @@ let init () : model * regl_output list =
     ]
   in
   Printf.printf "[smoke] init: shipping %d commands\n%!" (List.length cmds);
-  ({ ts = 0.0; events = 0 }, cmds)
+  ({ ts = 0.0; events = 0; frame = 0; late_load_shipped = false }, cmds)
 
 let update (m : model) (input : regl_input) : model * Regl_audio.audio * regl_output list =
-  let m' =
+  let m', extra_cmds =
     match input with
     | Regl_proto.Event (Regl_proto.UpdateTick ts) ->
-        { m with ts }
+        let frame' = m.frame + 1 in
+        (* M3.F.2 async-load exercise: ~1 second into the run, ship a
+           second LoadTexture mid-game to verify the worker-thread
+           pipeline and the GL-thread drain both work outside of the
+           init burst. The walker's silent-drop on missing textures
+           covers the gap before [texture_loaded] arrives. *)
+        if frame' = 60 && not m.late_load_shipped then
+          ({ m with ts; frame = frame'; late_load_shipped = true },
+           [ load_texture "enemy_late" "test/assets/enemy.png" None ])
+        else
+          ({ m with ts; frame = frame' }, [])
     | Regl_proto.Event (Regl_proto.MouseDown { button; x; y }) ->
         Printf.printf "[smoke] mouse_down b=%d x=%g y=%g\n%!" button x y;
-        { m with events = m.events + 1 }
+        ({ m with events = m.events + 1 }, [])
     | Regl_proto.Event (Regl_proto.MouseUp { button; x; y }) ->
         Printf.printf "[smoke] mouse_up b=%d x=%g y=%g\n%!" button x y;
-        { m with events = m.events + 1 }
+        ({ m with events = m.events + 1 }, [])
     | Regl_proto.Event (Regl_proto.KeyDown code) ->
         Printf.printf "[smoke] key_down %s\n%!" code;
-        { m with events = m.events + 1 }
+        ({ m with events = m.events + 1 }, [])
     | Regl_proto.Event (Regl_proto.KeyUp code) ->
         Printf.printf "[smoke] key_up %s\n%!" code;
-        { m with events = m.events + 1 }
+        ({ m with events = m.events + 1 }, [])
     | Regl_proto.REGLRecvMsg (Regl_proto.REGLTextureLoaded { name; width; height }) ->
         Printf.printf "[smoke] texture_loaded name=%s %dx%d\n%!" name width height;
-        { m with events = m.events + 1 }
+        ({ m with events = m.events + 1 }, [])
     | Regl_proto.REGLRecvMsg (Regl_proto.REGLTextureLoadFail name) ->
         Printf.printf "[smoke] texture_loadfail name=%s\n%!" name;
-        { m with events = m.events + 1 }
+        ({ m with events = m.events + 1 }, [])
     | Regl_proto.REGLRecvMsg (Regl_proto.REGLFontLoaded name) ->
         Printf.printf "[smoke] font_loaded name=%s\n%!" name;
-        { m with events = m.events + 1 }
+        ({ m with events = m.events + 1 }, [])
     | Regl_proto.REGLRecvMsg (Regl_proto.REGLFontLoadFail name) ->
         Printf.printf "[smoke] font_loadfail name=%s\n%!" name;
-        { m with events = m.events + 1 }
-    | _ -> m
+        ({ m with events = m.events + 1 }, [])
+    | _ -> (m, [])
   in
-  (m', Regl_audio.silence, [])
+  (m', Regl_audio.silence, extra_cmds)
 
 let view (m : model) : Regl_common.renderable =
   (* Rotate the rect slowly so we can confirm the per-frame uniform
@@ -115,6 +127,9 @@ let view (m : model) : Regl_common.renderable =
         (50., 200.) (180., 220.) (180., 320.) (40., 320.) "enemy";
       Regl_builtin_programs.centered_texture_cropped
         (250., 500.) (90., 60.) angle (0., 0.) (0.5, 0.5) "enemy";
+      (* Mid-run async-loaded copy. The walker silently drops this draw
+         until [texture_loaded "enemy_late"] arrives ~1 second in. *)
+      Regl_builtin_programs.rect_texture (470., 200.) (100., 100.) "enemy_late";
     ]
   in
   (* M3.E sanity tests:
