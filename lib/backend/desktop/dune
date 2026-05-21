@@ -34,14 +34,18 @@
 
 (rule
  (targets libdeclgl.a)
- (deps (env_var DECLGL_BUILD_DIR))
+ (deps
+  (env_var DECLGL_BUILD_DIR)
+  (universe))
  (action
   (bash
    "cp \"${DECLGL_BUILD_DIR}/libdeclgl.a\" %{targets}")))
 
 (rule
  (targets declgl_link_flags.sexp)
- (deps (env_var DECLGL_BUILD_DIR))
+ (deps
+  (env_var DECLGL_BUILD_DIR)
+  (universe))
  (action
   (bash
    "cp \"${DECLGL_BUILD_DIR}/declgl_link_flags.sexp\" %{targets}")))
