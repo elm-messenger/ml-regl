@@ -31,6 +31,13 @@ let init () : model * regl_output list =
          BackendEvent in [update] below. URL is filesystem-relative to
          the working directory the binary is launched from. *)
       load_texture "enemy" "test/assets/enemy.png" None;
+      (* M3.F: ship a LoadFont. The desktop backend reads the JSON
+         metrics off disk, decodes the atlas PNG, registers a Font and
+         a Texture, and ships back a [REGLFontLoaded] event. The
+         walker's [textbox] branch silently no-ops on draws referencing
+         this font until the load completes (mirrors the JS backend's
+         first-frame async-load tolerance). *)
+      load_font "custom" "test/assets/custom.png" "test/assets/custom-msdf.json";
     ]
   in
   Printf.printf "[smoke] init: shipping %d commands\n%!" (List.length cmds);
@@ -59,6 +66,12 @@ let update (m : model) (input : regl_input) : model * Regl_audio.audio * regl_ou
     | Regl_proto.REGLRecvMsg (Regl_proto.REGLTextureLoadFail name) ->
         Printf.printf "[smoke] texture_loadfail name=%s\n%!" name;
         { m with events = m.events + 1 }
+    | Regl_proto.REGLRecvMsg (Regl_proto.REGLFontLoaded name) ->
+        Printf.printf "[smoke] font_loaded name=%s\n%!" name;
+        { m with events = m.events + 1 }
+    | Regl_proto.REGLRecvMsg (Regl_proto.REGLFontLoadFail name) ->
+        Printf.printf "[smoke] font_loadfail name=%s\n%!" name;
+        { m with events = m.events + 1 }
     | _ -> m
   in
   (m', Regl_audio.silence, [])
@@ -72,40 +85,82 @@ let view (m : model) : Regl_common.renderable =
     if r < 0.0 then r +. tau else r
   in
   let angle = norm_angle (m.ts *. 0.001) in
-  Regl_common.group [] [
-    Regl_builtin_programs.clear (Color.rgb 0.6 0.7 0.6);
-    (* Filled triangle (uses caller-supplied pos). *)
-    Regl_builtin_programs.triangle
-      (200., 150.) (600., 150.) (400., 450.)
-      (Color.rgb 0.9 0.3 0.3);
-    (* Axis-aligned rect (uses hardcoded [0,1]² quad + posize). *)
-    Regl_builtin_programs.rect (60., 60.) (120., 80.)
-      (Color.rgb 0.2 0.6 0.9);
-    (* Rotated centered rect. *)
-    Regl_builtin_programs.rect_centered (660., 100.) (120., 60.) angle
-      (Color.rgb 0.95 0.85 0.2);
-    (* Filled circle (uses NDC fullscreen quad + cr SDF). *)
-    Regl_builtin_programs.circle (140., 480.) 60.
-      (Color.rgb 0.3 0.9 0.4);
-    (* Rounded rect (uses NDC fullscreen quad + cs+radius SDF). *)
-    Regl_builtin_programs.rounded_rect (520., 460.) (200., 100.) 22.
-      (Color.rgb 0.85 0.4 0.95);
-    (* M3.D Round 2: textured sprites. The "enemy" texture is
-       asynchronously loaded — until the TextureLoaded event fires the
-       walker silently drops these draws (matching JS). *)
-    (* `rect_texture` → centeredTexture under the hood — axis-aligned. *)
-    Regl_builtin_programs.rect_texture (350., 200.) (100., 100.) "enemy";
-    (* `centered_texture` → rotated full-image draw. *)
-    Regl_builtin_programs.centered_texture
-      (700., 460.) (80., 80.) angle "enemy";
-    (* `texture` → 4-corner quad (shows up to right, slanted). *)
-    Regl_builtin_programs.texture
-      (50., 200.) (180., 220.) (180., 320.) (40., 320.) "enemy";
-    (* `centered_texture_cropped` → sample only top-left half of the
-       image. (cx,cy,cw,ch) are in UV space [0,1]². *)
-    Regl_builtin_programs.centered_texture_cropped
-      (250., 500.) (90., 60.) angle (0., 0.) (0.5, 0.5) "enemy";
-  ]
+  let bg =
+    Regl_common.group [] [
+      Regl_builtin_programs.clear (Color.rgb 0.05 0.07 0.10);
+      (* Filled triangle (uses caller-supplied pos). *)
+      Regl_builtin_programs.triangle
+        (200., 150.) (600., 150.) (400., 450.)
+        (Color.rgb 0.9 0.3 0.3);
+      (* Axis-aligned rect (uses hardcoded [0,1]² quad + posize). *)
+      Regl_builtin_programs.rect (60., 60.) (120., 80.)
+        (Color.rgb 0.2 0.6 0.9);
+      (* Rotated centered rect. *)
+      Regl_builtin_programs.rect_centered (660., 100.) (120., 60.) angle
+        (Color.rgb 0.95 0.85 0.2);
+      (* Filled circle (uses NDC fullscreen quad + cr SDF). *)
+      Regl_builtin_programs.circle (140., 480.) 60.
+        (Color.rgb 0.3 0.9 0.4);
+      (* Rounded rect (uses NDC fullscreen quad + cs+radius SDF). *)
+      Regl_builtin_programs.rounded_rect (520., 460.) (200., 100.) 22.
+        (Color.rgb 0.85 0.4 0.95);
+    ]
+  in
+  let sprites =
+    Regl_common.group [] [
+      Regl_builtin_programs.rect_texture (350., 200.) (100., 100.) "enemy";
+      Regl_builtin_programs.centered_texture
+        (700., 460.) (80., 80.) angle "enemy";
+      Regl_builtin_programs.texture
+        (50., 200.) (180., 220.) (180., 320.) (40., 320.) "enemy";
+      Regl_builtin_programs.centered_texture_cropped
+        (250., 500.) (90., 60.) angle (0., 0.) (0.5, 0.5) "enemy";
+    ]
+  in
+  (* M3.E sanity tests:
+     1. [color_mult] effect tints the sprites red — proves
+        the effect path (single-pass FBO ping-pong) works.
+     2. [linear_fade] composite fades from `bg` to `sprites_tinted`
+        based on a slow sin wave — proves composite + sampler binding
+        for both halves works. *)
+  let fade_t = 0.5 +. 0.5 *. sin (m.ts *. 0.0008) in
+  let sprites_tinted =
+    Regl_common.group
+      [ Regl_effects.color_mult 1.0 0.4 0.4 1.0 ]
+      [ sprites ]
+  in
+    Regl_common.group
+      [ ]
+      [ Regl_builtin_programs.clear (Color.white);
+        Regl_compositors.linear_fade fade_t bg sprites_tinted;
+        (* M3.F: a few textbox draws. The atlas only carries lowercase +
+           digits + symbols, so we keep the strings lowercase. The first
+           is left-aligned; the second uses [textbox_centered] to verify
+           the centered align/valign math; the third uses [textbox_pro]
+           with non-default options (size/wordSpacing/letterSpacing/
+           color) to exercise the field-pull path. *)
+        Regl_builtin_programs.textbox
+          (40., 40.)
+          24.0
+          "hello world"
+          "custom"
+          (Color.rgb 1.0 1.0 1.0);
+        Regl_builtin_programs.textbox_centered
+          (400., 300.)
+          48.0
+          "ml-regl"
+          "custom"
+          (Color.rgb 0.95 0.95 0.2);
+        Regl_builtin_programs.textbox_pro (40., 540.)
+          { Regl_builtin_programs.default_textbox_option with
+            fonts = [ "custom" ];
+            text  = "the quick brown fox jumps over 13 lazy dogs!";
+            size  = 18.0;
+            color = Color.rgb 0.5 0.9 1.0;
+            letter_spacing = Some 0.5;
+            word_spacing   = Some 1.0;
+          };
+      ]
 
 let () =
   Printf.printf "[smoke] starting Regl_backend.create_app\n%!";
