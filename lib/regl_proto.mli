@@ -80,6 +80,21 @@ val create_regl_program : string -> Regl_program.regl_program -> regl_output
 val config_regl : regl_config -> regl_output
 val load_audio : string -> regl_output
 
+(** Symmetric inverses of the [load_*] commands. The backend frees the
+    underlying GPU resource (where applicable) before dropping the CPU-
+    side metadata; in-flight loads matching the same identity are
+    cancelled where possible. Unloading something that was never loaded
+    is a silent no-op. Identity keys mirror the corresponding [load_*]:
+
+    - [unload_texture]: by [name] (matches [load_texture]'s [name]).
+    - [unload_font]: by [name] (matches [load_font]'s [name]). The
+      atlas texture is freed too.
+    - [unload_audio]: by [audio_url] (matches [load_audio]'s sole arg). *)
+
+val unload_texture : string -> regl_output
+val unload_font : string -> regl_output
+val unload_audio : string -> regl_output
+
 type regl_event =
   | UpdateTick of float
   | MouseDown of { button : int; x : float; y : float }

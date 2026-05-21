@@ -5,7 +5,6 @@
 (* include module type of Regl_proto *)
 open Ml_regl_core
 open Ml_regl_core.Regl_proto
-open Ml_regl_core.Regl_runtime
 
 val execCmdPb : Backend_pb.BackendCommand.t list -> unit
 (** Encode + ship a [BackendCommandBatch] via the global [MlREGL] host. *)

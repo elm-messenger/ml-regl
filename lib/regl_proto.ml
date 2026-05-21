@@ -164,6 +164,21 @@ let load_audio audio_url =
     ~kind:(`Load_audio (Backend_pb.LoadAudio.make ~audio_url ()))
     ()
 
+let unload_texture name =
+  Backend_pb.BackendCommand.make
+    ~kind:(`Unload_texture (Backend_pb.UnloadTexture.make ~name ()))
+    ()
+
+let unload_font name =
+  Backend_pb.BackendCommand.make
+    ~kind:(`Unload_font (Backend_pb.UnloadFont.make ~name ()))
+    ()
+
+let unload_audio audio_url =
+  Backend_pb.BackendCommand.make
+    ~kind:(`Unload_audio (Backend_pb.UnloadAudio.make ~audio_url ()))
+    ()
+
 type regl_event =
   | UpdateTick of float
   | MouseDown of { button : int; x : float; y : float }

@@ -13,6 +13,8 @@ type model = {
   events : int;
   frame : int;
   late_load_shipped : bool;
+  late_unload_shipped : bool;
+  late_reload_shipped : bool;
 }
 
 let virt_w = 800.0
@@ -43,20 +45,42 @@ let init () : model * regl_output list =
     ]
   in
   Printf.printf "[smoke] init: shipping %d commands\n%!" (List.length cmds);
-  ({ ts = 0.0; events = 0; frame = 0; late_load_shipped = false }, cmds)
+  ({ ts = 0.0;
+     events = 0;
+     frame = 0;
+     late_load_shipped = false;
+     late_unload_shipped = false;
+     late_reload_shipped = false;
+   }, cmds)
 
 let update (m : model) (input : regl_input) : model * Regl_audio.audio * regl_output list =
   let m', extra_cmds =
     match input with
     | Regl_proto.Event (Regl_proto.UpdateTick ts) ->
         let frame' = m.frame + 1 in
-        (* M3.F.2 async-load exercise: ~1 second into the run, ship a
-           second LoadTexture mid-game to verify the worker-thread
-           pipeline and the GL-thread drain both work outside of the
-           init burst. The walker's silent-drop on missing textures
-           covers the gap before [texture_loaded] arrives. *)
+        (* M3.F.2 async-load + unload exercise.
+           Three milestones across the run:
+             - frame  60: ship a mid-run [load_texture "enemy_late"].
+                          Verifies async load arrives + walker silent-
+                          drops until then.
+             - frame 180: ship [unload_texture "enemy_late"].
+                          Verifies VRAM is freed (Texture dtor runs
+                          glDeleteTextures) and the slot is dropped
+                          (TextureRegistry::unregister_texture). The
+                          enemy_late sprite vanishes.
+             - frame 240: ship [load_texture "enemy_late"] again to
+                          verify the slot is reusable post-unload —
+                          if the previous unload didn't fully clean
+                          up, the second load would fail or render a
+                          stale handle. The sprite reappears. *)
         if frame' = 60 && not m.late_load_shipped then
           ({ m with ts; frame = frame'; late_load_shipped = true },
+           [ load_texture "enemy_late" "test/assets/enemy.png" None ])
+        else if frame' = 180 && not m.late_unload_shipped then
+          ({ m with ts; frame = frame'; late_unload_shipped = true },
+           [ unload_texture "enemy_late" ])
+        else if frame' = 240 && not m.late_reload_shipped then
+          ({ m with ts; frame = frame'; late_reload_shipped = true },
            [ load_texture "enemy_late" "test/assets/enemy.png" None ])
         else
           ({ m with ts; frame = frame' }, [])
