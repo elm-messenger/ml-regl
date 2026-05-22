@@ -130,3 +130,36 @@
  (target test_desktop_smoke_desktop.ml)
  (deps test_desktop_smoke.ml)
  (action (copy %{deps} %{target})))
+
+; --- test_desktop_audio_smoke: M6 audio E2E -----------------------------
+; Desktop-only: drives WAV (SDL3) + OGG (stb_vorbis) through libdeclgl's
+; AudioEngine and exercises start/stop/volume/playback_rate/unload.
+; There's no JS variant — the OCaml side is identical, but the audio
+; backend differs (Web Audio vs SDL3) and we just need to smoke-test the
+; native one.
+
+(executable
+ (name test_desktop_audio_smoke_desktop)
+ (modules test_desktop_audio_smoke_desktop)
+ (libraries ml_regl_desktop)
+ (modes (native exe))
+ (flags
+  (:standard -warn-error -A)))
+
+
+(executable
+ (name test_desktop_audio_smoke)
+ (modules test_desktop_audio_smoke)
+ (libraries js_of_ocaml ml_regl_js)
+ (modes js)
+ (preprocess
+  (pps js_of_ocaml-ppx))
+ (flags
+  (:standard -warn-error -A))
+ (js_of_ocaml
+  (flags
+   (:standard --opt=3))))
+(rule
+ (target test_desktop_audio_smoke_desktop.ml)
+ (deps test_desktop_audio_smoke.ml)
+ (action (copy %{deps} %{target})))

@@ -5,7 +5,17 @@
    (window callbacks, MlApp export, DOM event handling) lives in [regl.ml]. *)
 
 type time_interval = AnimationFrame | Millisecond of float
-type regl_config = { time_interval : time_interval }
+
+type window_config = {
+  fullscreen : bool option;
+  resizable : bool option;
+}
+
+let default_window_config = { fullscreen = None; resizable = None }
+
+type regl_config =
+  | ConfigTimeInterval of time_interval
+  | ConfigWindow of window_config
 type texture_mag_option = MagNearest | MagLinear
 
 type texture_min_option =
@@ -27,6 +37,7 @@ type regl_start_config = {
   virt_height : float;
   fbo_num : int;
   builtin_programs : string list option;
+  window : window_config;
 }
 
 type texture = { name : string; width : int; height : int }
@@ -131,19 +142,25 @@ let load_font name image_url json_url =
     ()
 
 let start_regl cfg =
+  let { fullscreen; resizable } = cfg.window in
+  let window =
+    match fullscreen, resizable with
+    | None, None -> None
+    | _ -> Some (Backend_pb.WindowConfig.make ?fullscreen ?resizable ())
+  in
   Backend_pb.BackendCommand.make
     ~kind:
       (match cfg.builtin_programs with
       | None ->
           `Start_regl
             (Backend_pb.StartRegl.make ~virt_width:cfg.virt_width
-               ~virt_height:cfg.virt_height ~fbo_num:cfg.fbo_num ())
+               ~virt_height:cfg.virt_height ~fbo_num:cfg.fbo_num ?window ())
       | Some xs ->
           let bps = Common_pb.StringArray.make ~values:xs () in
           `Start_regl
             (Backend_pb.StartRegl.make ~virt_width:cfg.virt_width
                ~virt_height:cfg.virt_height ~fbo_num:cfg.fbo_num
-               ~builtin_programs:bps ()))
+               ~builtin_programs:bps ?window ()))
     ()
 
 let create_regl_program name program =
@@ -152,11 +169,18 @@ let create_regl_program name program =
     ()
 
 let config_regl cfg =
-  let interval_ms =
-    match cfg.time_interval with AnimationFrame -> -1.0 | Millisecond ms -> ms
+  let config =
+    match cfg with
+    | ConfigTimeInterval ti ->
+        let ms =
+          match ti with AnimationFrame -> -1.0 | Millisecond ms -> ms
+        in
+        `Interval_ms ms
+    | ConfigWindow { fullscreen; resizable } ->
+        `Window (Backend_pb.WindowConfig.make ?fullscreen ?resizable ())
   in
   Backend_pb.BackendCommand.make
-    ~kind:(`Config_regl (Backend_pb.ReglConfig.make ~interval_ms ()))
+    ~kind:(`Config_regl (Backend_pb.ReglConfig.make ~config ()))
     ()
 
 let load_audio audio_url =
@@ -177,6 +201,11 @@ let unload_font name =
 let unload_audio audio_url =
   Backend_pb.BackendCommand.make
     ~kind:(`Unload_audio (Backend_pb.UnloadAudio.make ~audio_url ()))
+    ()
+
+let quit_regl () =
+  Backend_pb.BackendCommand.make
+    ~kind:(`Quit_regl (Backend_pb.QuitRegl.make ()))
     ()
 
 type regl_event =

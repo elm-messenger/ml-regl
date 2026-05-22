@@ -101,6 +101,7 @@ let init () =
       virt_height = 1080.0;
       fbo_num = 6;
       builtin_programs = None;
+      window = default_window_config;
     }
   in
   let m =
@@ -110,7 +111,7 @@ let init () =
   ( m,
     [
       start_regl startconfig;
-      config_regl { time_interval = Millisecond 16.0 };
+      config_regl (ConfigTimeInterval (Millisecond 16.0));
       load_texture texture_name texture_url None;
     ] )
 

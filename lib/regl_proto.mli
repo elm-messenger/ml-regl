@@ -5,7 +5,21 @@
     this core can be reused in environments that have no DOM. *)
 
 type time_interval = AnimationFrame | Millisecond of float
-type regl_config = { time_interval : time_interval }
+
+type window_config = {
+  fullscreen : bool option;
+  resizable : bool option;
+}
+
+val default_window_config : window_config
+
+(** A single ConfigRegl command carries exactly one configuration knob —
+    pacing or window flags — to keep "absent / unset" unambiguous on the
+    wire. Ship multiple [ConfigTimeInterval] / [ConfigWindow] values in
+    the same batch if you need to change both at once. *)
+type regl_config =
+  | ConfigTimeInterval of time_interval
+  | ConfigWindow of window_config
 type texture_mag_option = MagNearest | MagLinear
 
 type texture_min_option =
@@ -27,6 +41,7 @@ type regl_start_config = {
   virt_height : float;
   fbo_num : int;
   builtin_programs : string list option;
+  window : window_config;
 }
 
 type texture = { name : string; width : int; height : int }
@@ -94,6 +109,11 @@ val load_audio : string -> regl_output
 val unload_texture : string -> regl_output
 val unload_font : string -> regl_output
 val unload_audio : string -> regl_output
+
+val quit_regl : unit -> regl_output
+(** Ask the backend to exit its run loop. The backend tears down its
+    window/GL/audio state and the host process resumes. On hosts that
+    don't own the run loop (e.g. the JS backend) this is a no-op. *)
 
 type regl_event =
   | UpdateTick of float

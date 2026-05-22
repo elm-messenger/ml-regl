@@ -23,13 +23,14 @@ let virt_h = 600.0
 let init () : model * regl_output list =
   let cmds =
     [
-      config_regl { time_interval = AnimationFrame };
+      config_regl (ConfigTimeInterval AnimationFrame);
       start_regl
         {
           virt_width = virt_w;
           virt_height = virt_h;
           fbo_num = 5;
           builtin_programs = None;
+          window = default_window_config;
         };
       (* M3.D Round 1: ship a LoadTexture and observe the round-trip
          BackendEvent in [update] below. URL is filesystem-relative to

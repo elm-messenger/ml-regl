@@ -13,12 +13,13 @@ let init () =
       virt_height = 720.0;
       fbo_num = 2;
       builtin_programs = None;
+      window = default_window_config;
     }
   in
   ( { texture_fail = false; font_fail = false; last_msg = "loading..." },
     [
       start_regl startconfig;
-      config_regl { time_interval = Millisecond 16.0 };
+      config_regl (ConfigTimeInterval (Millisecond 16.0));
       load_texture missing_texture_name "/test/assets/DOES_NOT_EXIST.png" None;
       load_font missing_font_name "/test/assets/DOES_NOT_EXIST.png"
         "/test/assets/DOES_NOT_EXIST.json";

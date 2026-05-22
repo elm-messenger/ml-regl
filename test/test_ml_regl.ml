@@ -366,6 +366,7 @@ let init () =
       virt_height = 1080.;
       fbo_num = 5;
       builtin_programs = None;
+      window = default_window_config;
     }
   in
   let texture_opts =
@@ -379,7 +380,7 @@ let init () =
   ( initial_model,
     [
       start_regl startconfig;
-      config_regl { time_interval = Millisecond 16.0 };
+      config_regl (ConfigTimeInterval (Millisecond 16.0));
       load_texture texture_name texture_url None;
       load_texture cropped_texture_name texture_url texture_opts;
       load_audio audio_url;
