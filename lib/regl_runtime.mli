@@ -29,7 +29,6 @@ end
 module Make (H : Host) : sig
   type 'model handle = {
     init : unit -> unit;
-    update : float -> unit;
     event : bytes -> unit;
     view : unit -> bytes option;
     recv_regl_cmd_pb : bytes -> unit;

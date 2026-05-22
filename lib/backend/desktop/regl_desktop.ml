@@ -33,7 +33,6 @@ let create_app (init : unit -> 'a * regl_output list)
 
   (* C++ side resolves these by name with caml_named_value. The names mirror the
      [MlApp] keys that the JS backend sees via [Js.export "MlApp"]. *)
-  Callback.register "declgl_app_update" h.update;
   Callback.register "declgl_app_event" h.event;
   Callback.register "declgl_app_view" h.view;
   Callback.register "declgl_app_recv_regl_cmd_pb" h.recv_regl_cmd_pb;

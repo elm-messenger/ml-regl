@@ -8,7 +8,6 @@ end
 module Make (H : Host) = struct
   type 'model handle = {
     init : unit -> unit;
-    update : float -> unit;
     event : bytes -> unit;
     view : unit -> bytes option;
     recv_regl_cmd_pb : bytes -> unit;
@@ -48,7 +47,6 @@ module Make (H : Host) = struct
           let m, outputs = init () in
           model := Some m;
           ship_cmds outputs);
-      update = (fun ts -> drive (Regl_proto.Event (Regl_proto.UpdateTick ts)));
       event =
         (fun payload ->
           match Regl_proto.decode_event_pb payload with

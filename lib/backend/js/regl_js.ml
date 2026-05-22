@@ -50,7 +50,6 @@ let create_app (init : unit -> 'a * regl_output list)
     (Js.Unsafe.obj
        [|
          ("init", Js.Unsafe.inject (fun _ -> h.init ()));
-         ("update", Js.Unsafe.inject (fun ts -> h.update ts));
          ( "event",
            Js.Unsafe.inject (fun ev ->
                h.event (bytes_of_uint8array (Js.Unsafe.coerce ev))) );
