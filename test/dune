@@ -163,3 +163,27 @@
  (target test_desktop_audio_smoke_desktop.ml)
  (deps test_desktop_audio_smoke.ml)
  (action (copy %{deps} %{target})))
+
+; --- test_desktop_window_smoke: window-config E2E ----------------------
+; Desktop-only: exercises both StartRegl.window (initial flags) and
+; ConfigRegl/ConfigWindow (runtime overrides), then ships quit_regl.
+
+(executable
+ (name test_desktop_window_smoke)
+ (modules test_desktop_window_smoke)
+ (libraries ml_regl_desktop)
+ (modes (native exe))
+ (flags
+  (:standard -warn-error -A)))
+
+; --- test_desktop_fps_smoke: runtime frame-rate change E2E -------------
+; Desktop-only: ships ConfigRegl/ConfigTimeInterval mid-run and
+; visualises the achieved fps so vsync vs manual pacing is observable.
+
+(executable
+ (name test_desktop_fps_smoke)
+ (modules test_desktop_fps_smoke)
+ (libraries ml_regl_desktop)
+ (modes (native exe))
+ (flags
+  (:standard -warn-error -A)))
