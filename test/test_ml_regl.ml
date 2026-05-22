@@ -37,8 +37,8 @@ let initial_model =
 
 let texture_name = "enemy"
 let cropped_texture_name = "enemy-crop"
-let texture_url = "/test/assets/enemy.png"
-let audio_url = "/test/assets/test.ogg"
+let texture_url = "test/assets/enemy.png"
+let audio_url = "test/assets/test.ogg"
 let custom_program_name = "customFlat"
 
 let custom_program =
@@ -65,9 +65,6 @@ void main() {
     primitive = None;
     count = Some (Regl_program.static_number 3.0);
   }
-
-let _constructor_smoke : regl_output list =
-  [ load_font "demo-font" "unused.png" "unused.json" ]
 
 let scene_of_time ts =
   match int_of_float (ts /. 1800.0) mod 7 with
@@ -380,10 +377,12 @@ let init () =
   ( initial_model,
     [
       start_regl startconfig;
-      config_regl (ConfigTimeInterval (Millisecond 16.0));
+      config_regl (ConfigTimeInterval AnimationFrame);
       load_texture texture_name texture_url None;
       load_texture cropped_texture_name texture_url texture_opts;
       load_audio audio_url;
+      load_font "consolas" "test/assets/custom.png"
+        "test/assets/custom-msdf.json";
       create_regl_program custom_program_name custom_program;
     ] )
 

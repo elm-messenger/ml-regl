@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ml-regl: test_fbo_grow</title>
+    <script src="/_build/default/test/test_fbo_grow.bc.js"></script>
+    <script src="/ml-regl-js/build/regl.js"></script>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <!--
+      Cross-backend test for dynamic FBO pool growth. Seeds the pool with
+      [fbo_num = 1]; the renderable tree needs many simultaneous palettes,
+      so the JS backend's [allocNewFBO] path (ml-regl-js/src/app.js
+      [getFreePalette]) must fire and grow the pool. Open the devtools
+      console and look for a single line like:
+
+        No free palette found!
+
+      printed once when the first growth happens. After that the pool
+      stabilises at the true high-water mark and the warning stops.
+    -->
+    <canvas id="myCanvas"></canvas>
+    <script>
+      const canvas = document.getElementById("myCanvas");
+      canvas.width = 800;
+      canvas.height = 600;
+      MlREGL.init(canvas, MlApp, []);
+      MlApp.init();
+    </script>
+  </body>
+</html>

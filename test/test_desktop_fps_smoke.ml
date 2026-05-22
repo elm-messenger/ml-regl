@@ -1,21 +1,20 @@
 (* Desktop-only smoke test for runtime frame-rate changes.
 
-   Walks through several pacing configs by shipping
-   [config_regl (ConfigTimeInterval ...)] mid-run and measures the
-   actual achieved frame interval over a sliding window. The on-screen
-   text shows the requested target vs the measured average so the
-   pacing change is obvious at a glance, and the same numbers are
-   printed at each phase boundary. *)
+   Walks through several pacing configs by shipping [config_regl
+   (ConfigTimeInterval ...)] mid-run and measures the actual achieved frame
+   interval over a sliding window. The on-screen text shows the requested target
+   vs the measured average so the pacing change is obvious at a glance, and the
+   same numbers are printed at each phase boundary. *)
 
 open Ml_regl_core
 open Ml_regl_core.Regl_proto
 
 type phase =
-  | P0_Vsync         (* AnimationFrame: vsync / adaptive vsync *)
-  | P1_Slow          (* Millisecond 100.  -> ~10 fps *)
-  | P2_Medium        (* Millisecond 33.33 -> ~30 fps *)
-  | P3_Fast          (* Millisecond 8.    -> ~125 fps cap *)
-  | P4_BackToVsync   (* AnimationFrame again *)
+  | P0_Vsync (* AnimationFrame: vsync / adaptive vsync *)
+  | P1_Slow (* Millisecond 100. -> ~10 fps *)
+  | P2_Medium (* Millisecond 33.33 -> ~30 fps *)
+  | P3_Fast (* Millisecond 8. -> ~125 fps cap *)
+  | P4_BackToVsync (* AnimationFrame again *)
   | P5_Quitting
 
 let phase_label = function
@@ -26,33 +25,31 @@ let phase_label = function
   | P4_BackToVsync -> "phase 4: AnimationFrame (vsync, restored)"
   | P5_Quitting -> "phase 5: quit_regl shipped"
 
-(* Phase boundaries in *real* milliseconds (UpdateTick.ts), not
-   frames — at variable frame rates a frame counter would lie. Each
-   phase lasts ~3 s so the measured rate has time to settle. *)
+(* Phase boundaries in *real* milliseconds (UpdateTick.ts), not frames — at
+   variable frame rates a frame counter would lie. Each phase lasts ~3 s so the
+   measured rate has time to settle. *)
 let t_p1 = 3_000.0
 let t_p2 = 6_000.0
 let t_p3 = 9_000.0
 let t_p4 = 12_000.0
 let t_quit = 15_000.0
-
 let virt_w = 800.0
 let virt_h = 600.0
 
-(* Sliding-window history of recent frame timestamps, used to compute
-   the achieved rate. *)
+(* Sliding-window history of recent frame timestamps, used to compute the
+   achieved rate. *)
 let history_size = 60
 
 type model = {
   ts : float;
   frame : int;
   phase : phase;
-  history : float list;  (* most-recent UpdateTick.ts values, head = newest *)
+  history : float list; (* most-recent UpdateTick.ts values, head = newest *)
 }
 
 let init () : model * regl_output list =
   let cmds =
     [
-      config_regl (ConfigTimeInterval AnimationFrame);
       start_regl
         {
           virt_width = virt_w;
@@ -61,12 +58,12 @@ let init () : model * regl_output list =
           builtin_programs = None;
           window = default_window_config;
         };
+      config_regl (ConfigTimeInterval AnimationFrame);
       load_font "custom" "test/assets/custom.png" "test/assets/custom-msdf.json";
     ]
   in
   Printf.printf "[fps-smoke] init: %s\n%!" (phase_label P0_Vsync);
-  ( { ts = 0.0; frame = 0; phase = P0_Vsync; history = [] },
-    cmds )
+  ({ ts = 0.0; frame = 0; phase = P0_Vsync; history = [] }, cmds)
 
 (* Push a new sample, drop the oldest if over capacity. *)
 let push_history ts hist =
@@ -78,8 +75,8 @@ let push_history ts hist =
   in
   take history_size h
 
-(* Achieved fps over [history]: (n - 1) / span_seconds. Returns 0.
-   when there aren't enough samples yet. *)
+(* Achieved fps over [history]: (n - 1) / span_seconds. Returns 0. when there
+   aren't enough samples yet. *)
 let measured_fps hist =
   match hist with
   | [] | [ _ ] -> 0.0
@@ -93,17 +90,13 @@ let advance_phase (m : model) : model * regl_output list =
   let next_at, next_phase, cmds =
     match m.phase with
     | P0_Vsync ->
-        ( t_p1,
-          P1_Slow,
-          [ config_regl (ConfigTimeInterval (Millisecond 100.0)) ] )
+        (t_p1, P1_Slow, [ config_regl (ConfigTimeInterval (Millisecond 100.0)) ])
     | P1_Slow ->
         ( t_p2,
           P2_Medium,
           [ config_regl (ConfigTimeInterval (Millisecond 33.333)) ] )
     | P2_Medium ->
-        ( t_p3,
-          P3_Fast,
-          [ config_regl (ConfigTimeInterval (Millisecond 8.0)) ] )
+        (t_p3, P3_Fast, [ config_regl (ConfigTimeInterval (Millisecond 8.0)) ])
     | P3_Fast ->
         ( t_p4,
           P4_BackToVsync,
@@ -112,22 +105,22 @@ let advance_phase (m : model) : model * regl_output list =
     | P5_Quitting -> (Float.infinity, P5_Quitting, [])
   in
   if m.ts >= next_at && next_phase <> m.phase then begin
-    Printf.printf
-      "[fps-smoke] t=%.0fms frame=%d  measured=%.2f fps  -> %s\n%!"
+    Printf.printf "[fps-smoke] t=%.0fms frame=%d  measured=%.2f fps  -> %s\n%!"
       m.ts m.frame (measured_fps m.history) (phase_label next_phase);
-    (* Reset history so the post-transition measurement isn't
-       contaminated by the previous phase's interval. *)
+    (* Reset history so the post-transition measurement isn't contaminated by
+       the previous phase's interval. *)
     ({ m with phase = next_phase; history = [] }, cmds)
   end
   else (m, [])
 
-let update (m : model) (input : regl_input)
-    : model * Regl_audio.audio * regl_output list =
+let update (m : model) (input : regl_input) :
+    model * Regl_audio.audio * regl_output list =
   let m', extra_cmds =
     match input with
     | Regl_proto.Event (Regl_proto.UpdateTick ts) ->
         let m =
-          { m with
+          {
+            m with
             ts;
             frame = m.frame + 1;
             history = push_history ts m.history;
@@ -148,8 +141,8 @@ let view (m : model) : Regl_common.renderable =
     | P4_BackToVsync -> Color.rgb 0.10 0.18 0.18
     | P5_Quitting -> Color.rgb 0.05 0.05 0.05
   in
-  (* A spinning rect provides a visual rate cue independent of the
-     numbers — at 10 fps it is visibly steppy, at vsync it's smooth. *)
+  (* A spinning rect provides a visual rate cue independent of the numbers — at
+     10 fps it is visibly steppy, at vsync it's smooth. *)
   let tau = 2.0 *. Float.pi in
   let angle = Float.rem (m.ts *. 0.002) tau in
   let fps = measured_fps m.history in
@@ -158,17 +151,14 @@ let view (m : model) : Regl_common.renderable =
       Regl_builtin_programs.clear bg_color;
       Regl_builtin_programs.rect_centered (400., 360.) (160., 90.) angle
         (Color.rgb 0.95 0.85 0.2);
-      Regl_builtin_programs.textbox (20., 40.) 22.0
-        (phase_label m.phase) "custom"
-        (Color.rgb 1.0 1.0 1.0);
+      Regl_builtin_programs.textbox (20., 40.) 22.0 (phase_label m.phase)
+        "custom" (Color.rgb 1.0 1.0 1.0);
       Regl_builtin_programs.textbox (20., 90.) 18.0
-        (Printf.sprintf "measured: %.2f fps  (frame=%d  t=%.0fms)" fps
-           m.frame m.ts)
-        "custom"
-        (Color.rgb 0.85 0.95 0.85);
+        (Printf.sprintf "measured: %.2f fps  (frame=%d  t=%.0fms)" fps m.frame
+           m.ts)
+        "custom" (Color.rgb 0.85 0.95 0.85);
       Regl_builtin_programs.textbox (20., 130.) 16.0
-        "watch the spinning rect: smooth at vsync, steppy at 10 fps"
-        "custom"
+        "watch the spinning rect: smooth at vsync, steppy at 10 fps" "custom"
         (Color.rgb 0.7 0.7 0.7);
     ]
 

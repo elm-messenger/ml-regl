@@ -38,8 +38,7 @@
   (env_var DECLGL_BUILD_DIR)
   (universe))
  (action
-  (bash
-   "cp \"${DECLGL_BUILD_DIR}/libdeclgl.a\" %{targets}")))
+  (bash "cp \"${DECLGL_BUILD_DIR}/libdeclgl.a\" %{targets}")))
 
 (rule
  (targets declgl_link_flags.sexp)
@@ -47,8 +46,7 @@
   (env_var DECLGL_BUILD_DIR)
   (universe))
  (action
-  (bash
-   "cp \"${DECLGL_BUILD_DIR}/declgl_link_flags.sexp\" %{targets}")))
+  (bash "cp \"${DECLGL_BUILD_DIR}/declgl_link_flags.sexp\" %{targets}")))
 
 (library
  (name ml_regl_desktop)

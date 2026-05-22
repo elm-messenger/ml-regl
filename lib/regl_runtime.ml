@@ -49,10 +49,11 @@ module Make (H : Host) = struct
           model := Some m;
           ship_cmds outputs);
       update = (fun ts -> drive (Regl_proto.Event (Regl_proto.UpdateTick ts)));
-      event = (fun payload ->
-        match Regl_proto.decode_event_pb payload with
-        | Some ev -> drive (Regl_proto.Event ev)
-        | None -> ());
+      event =
+        (fun payload ->
+          match Regl_proto.decode_event_pb payload with
+          | Some ev -> drive (Regl_proto.Event ev)
+          | None -> ());
       view =
         (fun () ->
           match !model with

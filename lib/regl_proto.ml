@@ -5,17 +5,14 @@
    (window callbacks, MlApp export, DOM event handling) lives in [regl.ml]. *)
 
 type time_interval = AnimationFrame | Millisecond of float
-
-type window_config = {
-  fullscreen : bool option;
-  resizable : bool option;
-}
+type window_config = { fullscreen : bool option; resizable : bool option }
 
 let default_window_config = { fullscreen = None; resizable = None }
 
 type regl_config =
   | ConfigTimeInterval of time_interval
   | ConfigWindow of window_config
+
 type texture_mag_option = MagNearest | MagLinear
 
 type texture_min_option =
@@ -144,7 +141,7 @@ let load_font name image_url json_url =
 let start_regl cfg =
   let { fullscreen; resizable } = cfg.window in
   let window =
-    match fullscreen, resizable with
+    match (fullscreen, resizable) with
     | None, None -> None
     | _ -> Some (Backend_pb.WindowConfig.make ?fullscreen ?resizable ())
   in
@@ -222,16 +219,14 @@ type regl_input =
   | AudioMsg of audio_recv_msg
 
 let decode_event_pb (payload : bytes) : regl_event option =
-    let reader =
-      Ocaml_protoc_plugin.Reader.create (Bytes.unsafe_to_string payload)
-    in
-    match Backend_pb.Event.from_proto_exn reader with
-    | `Update_tick t -> Some (UpdateTick t)
-    | `Mouse_down { button; x; y } ->
-        Some (MouseDown { button; x; y })
-    | `Mouse_up { button; x; y } ->
-        Some (MouseUp { button; x; y })
-    | `Mouse_move { x; y } -> Some (MouseMove { x; y })
-    | `Key_down key -> Some (KeyDown key)
-    | `Key_up key -> Some (KeyUp key)
-    | `not_set -> None
+  let reader =
+    Ocaml_protoc_plugin.Reader.create (Bytes.unsafe_to_string payload)
+  in
+  match Backend_pb.Event.from_proto_exn reader with
+  | `Update_tick t -> Some (UpdateTick t)
+  | `Mouse_down { button; x; y } -> Some (MouseDown { button; x; y })
+  | `Mouse_up { button; x; y } -> Some (MouseUp { button; x; y })
+  | `Mouse_move { x; y } -> Some (MouseMove { x; y })
+  | `Key_down key -> Some (KeyDown key)
+  | `Key_up key -> Some (KeyUp key)
+  | `not_set -> None

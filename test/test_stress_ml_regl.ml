@@ -32,8 +32,8 @@ let compute_fps times =
       if dt_ms <= 0.0 then 0.0 else frame_count *. 1000.0 /. dt_ms
 
 let build_triangles ~virt_width ~virt_height =
-  let cols = 18 in
-  let rows = 26 in
+  let cols = 30 in
+  let rows = 30 in
   let cell_w = virt_width /. float_of_int cols in
   let cell_h = virt_height /. float_of_int rows in
   let tri_in_cell i j =
@@ -111,9 +111,10 @@ let init () =
   ( m,
     [
       start_regl startconfig;
-      config_regl (ConfigTimeInterval (AnimationFrame));
+      config_regl (ConfigTimeInterval (Millisecond 0.01));
       load_texture texture_name texture_url None;
-      load_font "consolas" "test/assets/custom.png" "test/assets/custom-msdf.json";
+      load_font "consolas" "test/assets/custom.png"
+        "test/assets/custom-msdf.json";
     ] )
 
 let update (m : model) (e : regl_input) =

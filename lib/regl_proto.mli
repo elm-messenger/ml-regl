@@ -5,21 +5,18 @@
     this core can be reused in environments that have no DOM. *)
 
 type time_interval = AnimationFrame | Millisecond of float
-
-type window_config = {
-  fullscreen : bool option;
-  resizable : bool option;
-}
+type window_config = { fullscreen : bool option; resizable : bool option }
 
 val default_window_config : window_config
 
-(** A single ConfigRegl command carries exactly one configuration knob —
-    pacing or window flags — to keep "absent / unset" unambiguous on the
-    wire. Ship multiple [ConfigTimeInterval] / [ConfigWindow] values in
-    the same batch if you need to change both at once. *)
+(** A single ConfigRegl command carries exactly one configuration knob — pacing
+    or window flags — to keep "absent / unset" unambiguous on the wire. Ship
+    multiple [ConfigTimeInterval] / [ConfigWindow] values in the same batch if
+    you need to change both at once. *)
 type regl_config =
   | ConfigTimeInterval of time_interval
   | ConfigWindow of window_config
+
 type texture_mag_option = MagNearest | MagLinear
 
 type texture_min_option =
@@ -85,7 +82,6 @@ val encode_backend_command_batch_pb : Backend_pb.BackendCommand.t list -> bytes
 val decode_backend_event_pb : bytes -> regl_recv_msg option
 (** Decode a [BackendEvent] protobuf payload coming from the host. *)
 
-
 (** Smart constructors for [BackendCommand]s. *)
 
 val load_texture : string -> string -> texture_options option -> regl_output
@@ -96,14 +92,14 @@ val config_regl : regl_config -> regl_output
 val load_audio : string -> regl_output
 
 (** Symmetric inverses of the [load_*] commands. The backend frees the
-    underlying GPU resource (where applicable) before dropping the CPU-
-    side metadata; in-flight loads matching the same identity are
-    cancelled where possible. Unloading something that was never loaded
-    is a silent no-op. Identity keys mirror the corresponding [load_*]:
+    underlying GPU resource (where applicable) before dropping the CPU- side
+    metadata; in-flight loads matching the same identity are cancelled where
+    possible. Unloading something that was never loaded is a silent no-op.
+    Identity keys mirror the corresponding [load_*]:
 
     - [unload_texture]: by [name] (matches [load_texture]'s [name]).
-    - [unload_font]: by [name] (matches [load_font]'s [name]). The
-      atlas texture is freed too.
+    - [unload_font]: by [name] (matches [load_font]'s [name]). The atlas texture
+      is freed too.
     - [unload_audio]: by [audio_url] (matches [load_audio]'s sole arg). *)
 
 val unload_texture : string -> regl_output
@@ -112,8 +108,8 @@ val unload_audio : string -> regl_output
 
 val quit_regl : unit -> regl_output
 (** Ask the backend to exit its run loop. The backend tears down its
-    window/GL/audio state and the host process resumes. On hosts that
-    don't own the run loop (e.g. the JS backend) this is a no-op. *)
+    window/GL/audio state and the host process resumes. On hosts that don't own
+    the run loop (e.g. the JS backend) this is a no-op. *)
 
 type regl_event =
   | UpdateTick of float

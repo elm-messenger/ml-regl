@@ -36,14 +36,16 @@
  (name test_ml_regl_desktop)
  (modules test_ml_regl_desktop)
  (libraries ml_regl_desktop)
- (modes (native exe))
+ (modes
+  (native exe))
  (flags
   (:standard -warn-error -A)))
 
 (rule
  (target test_ml_regl_desktop.ml)
  (deps test_ml_regl.ml)
- (action (copy %{deps} %{target})))
+ (action
+  (copy %{deps} %{target})))
 
 ; --- test_stress_ml_regl: stress-test variant --------------------------
 
@@ -64,14 +66,16 @@
  (name test_stress_ml_regl_desktop)
  (modules test_stress_ml_regl_desktop)
  (libraries ml_regl_desktop)
- (modes (native exe))
+ (modes
+  (native exe))
  (flags
   (:standard -warn-error -A)))
 
 (rule
  (target test_stress_ml_regl_desktop.ml)
  (deps test_stress_ml_regl.ml)
- (action (copy %{deps} %{target})))
+ (action
+  (copy %{deps} %{target})))
 
 ; --- test_failures_ml_regl: error-path coverage ------------------------
 
@@ -92,44 +96,29 @@
  (name test_failures_ml_regl_desktop)
  (modules test_failures_ml_regl_desktop)
  (libraries ml_regl_desktop)
- (modes (native exe))
+ (modes
+  (native exe))
  (flags
   (:standard -warn-error -A)))
 
 (rule
  (target test_failures_ml_regl_desktop.ml)
  (deps test_failures_ml_regl.ml)
- (action (copy %{deps} %{target})))
+ (action
+  (copy %{deps} %{target})))
 
 ; --- test_desktop_smoke: minimal triangle smoke test -------------------
 ; (Also gets a js variant for consistency, even though the smoke test was
 ; originally written for desktop verification.)
 
 (executable
- (name test_desktop_smoke_desktop)
- (modules test_desktop_smoke_desktop)
- (libraries ml_regl_desktop)
- (modes (native exe))
- (flags
-  (:standard -warn-error -A)))
-
-(executable
  (name test_desktop_smoke)
  (modules test_desktop_smoke)
- (libraries js_of_ocaml ml_regl_js)
- (modes js)
- (preprocess
-  (pps js_of_ocaml-ppx))
+ (libraries ml_regl_desktop)
+ (modes
+  (native exe))
  (flags
-  (:standard -warn-error -A))
- (js_of_ocaml
-  (flags
-   (:standard --opt=3))))
-
-(rule
- (target test_desktop_smoke_desktop.ml)
- (deps test_desktop_smoke.ml)
- (action (copy %{deps} %{target})))
+  (:standard -warn-error -A)))
 
 ; --- test_desktop_audio_smoke: M6 audio E2E -----------------------------
 ; Desktop-only: drives WAV (SDL3) + OGG (stb_vorbis) through libdeclgl's
@@ -139,30 +128,13 @@
 ; native one.
 
 (executable
- (name test_desktop_audio_smoke_desktop)
- (modules test_desktop_audio_smoke_desktop)
- (libraries ml_regl_desktop)
- (modes (native exe))
- (flags
-  (:standard -warn-error -A)))
-
-
-(executable
  (name test_desktop_audio_smoke)
  (modules test_desktop_audio_smoke)
- (libraries js_of_ocaml ml_regl_js)
- (modes js)
- (preprocess
-  (pps js_of_ocaml-ppx))
+ (libraries ml_regl_desktop)
+ (modes
+  (native exe))
  (flags
-  (:standard -warn-error -A))
- (js_of_ocaml
-  (flags
-   (:standard --opt=3))))
-(rule
- (target test_desktop_audio_smoke_desktop.ml)
- (deps test_desktop_audio_smoke.ml)
- (action (copy %{deps} %{target})))
+  (:standard -warn-error -A)))
 
 ; --- test_desktop_window_smoke: window-config E2E ----------------------
 ; Desktop-only: exercises both StartRegl.window (initial flags) and
@@ -172,7 +144,8 @@
  (name test_desktop_window_smoke)
  (modules test_desktop_window_smoke)
  (libraries ml_regl_desktop)
- (modes (native exe))
+ (modes
+  (native exe))
  (flags
   (:standard -warn-error -A)))
 
@@ -184,6 +157,73 @@
  (name test_desktop_fps_smoke)
  (modules test_desktop_fps_smoke)
  (libraries ml_regl_desktop)
- (modes (native exe))
+ (modes
+  (native exe))
  (flags
   (:standard -warn-error -A)))
+
+; --- test_desktop_textbox_smoke: textbox layout/style E2E --------------
+; Cross-backend: exercises multiline, word wrap, wordBreak, italic skew,
+; MSDF thickness/boldness, and text alignment options.
+
+(executable
+ (name test_desktop_textbox_smoke)
+ (modules test_desktop_textbox_smoke)
+ (libraries js_of_ocaml ml_regl_js)
+ (modes js)
+ (preprocess
+  (pps js_of_ocaml-ppx))
+ (flags
+  (:standard -warn-error -A))
+ (js_of_ocaml
+  (flags
+   (:standard --opt=3))))
+
+(executable
+ (name test_desktop_textbox_smoke_desktop)
+ (modules test_desktop_textbox_smoke_desktop)
+ (libraries ml_regl_desktop)
+ (modes
+  (native exe))
+ (flags
+  (:standard -warn-error -A)))
+
+(rule
+ (target test_desktop_textbox_smoke_desktop.ml)
+ (deps test_desktop_textbox_smoke.ml)
+ (action
+  (copy %{deps} %{target})))
+
+; --- test_fbo_grow: cross-backend dynamic FBO pool growth --------------
+; Seeds the pool with [fbo_num = 1] and renders a tree that needs many
+; concurrent palettes per frame. Both backends (JS allocNewFBO; desktop
+; FboPool::acquire grow path) must dynamically grow the pool or the
+; visible output will be missing sub-trees.
+
+(executable
+ (name test_fbo_grow)
+ (modules test_fbo_grow)
+ (libraries js_of_ocaml ml_regl_js)
+ (modes js)
+ (preprocess
+  (pps js_of_ocaml-ppx))
+ (flags
+  (:standard -warn-error -A))
+ (js_of_ocaml
+  (flags
+   (:standard --opt=3))))
+
+(executable
+ (name test_fbo_grow_desktop)
+ (modules test_fbo_grow_desktop)
+ (libraries ml_regl_desktop)
+ (modes
+  (native exe))
+ (flags
+  (:standard -warn-error -A)))
+
+(rule
+ (target test_fbo_grow_desktop.ml)
+ (deps test_fbo_grow.ml)
+ (action
+  (copy %{deps} %{target})))
