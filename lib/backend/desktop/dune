@@ -30,7 +30,11 @@
 ; that `(foreign_archives declgl)` and `(c_library_flags (:include …))`
 ; expect. `(env_var DECLGL_BUILD_DIR)` registers the var as a rule
 ; dependency, so flipping configurations triggers a rebuild without a
-; manual `dune clean`.
+; manual `dune clean`. We use dune's portable `(copy ...)` action rather
+; than shelling out to `cp` so the same rule works on macOS, Linux, and
+; Windows — and CMake on Windows is told to keep the `lib<name>.a`
+; archive name (see declgl-desktop/CMakeLists.txt) so the source path
+; stays platform-independent.
 
 (rule
  (targets libdeclgl.a)
@@ -38,7 +42,7 @@
   (env_var DECLGL_BUILD_DIR)
   (universe))
  (action
-  (bash "cp \"${DECLGL_BUILD_DIR}/libdeclgl.a\" %{targets}")))
+  (copy %{env:DECLGL_BUILD_DIR=}/libdeclgl.a %{targets})))
 
 (rule
  (targets declgl_link_flags.sexp)
@@ -46,7 +50,7 @@
   (env_var DECLGL_BUILD_DIR)
   (universe))
  (action
-  (bash "cp \"${DECLGL_BUILD_DIR}/declgl_link_flags.sexp\" %{targets}")))
+  (copy %{env:DECLGL_BUILD_DIR=}/declgl_link_flags.sexp %{targets})))
 
 (library
  (name ml_regl_desktop)
