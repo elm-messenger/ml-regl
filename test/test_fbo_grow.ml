@@ -29,7 +29,6 @@ type model = { ts : float; frame : int }
 
 let virt_w = 800.0
 let virt_h = 600.0
-let total_frames = 240
 
 let init () : model * regl_output list =
   let cmds =
@@ -49,8 +48,6 @@ let init () : model * regl_output list =
       config_regl (ConfigTimeInterval AnimationFrame);
     ]
   in
-  Printf.printf "[fbo_grow] init: fbo_num=1 (seed); test runs %d frames\n%!"
-    total_frames;
   ({ ts = 0.0; frame = 0 }, cmds)
 
 let update (m : model) (input : regl_input) :
@@ -58,13 +55,6 @@ let update (m : model) (input : regl_input) :
   match input with
   | Regl_proto.Event (Regl_proto.UpdateTick ts) ->
       let frame' = m.frame + 1 in
-      if frame' = 1 then
-        Printf.printf
-          "[fbo_grow] frame 1: rendering composite-with-effects tree; \
-           expect a 'pool full; growing' warning from the desktop \
-           backend, or the JS backend's allocNewFBO branch.\n%!";
-      if frame' = total_frames then
-        Printf.printf "[fbo_grow] reached frame %d\n%!" frame';
       ({ ts; frame = frame' }, Regl_audio.silence, [])
   | _ -> (m, Regl_audio.silence, [])
 
@@ -122,7 +112,4 @@ let view (m : model) : Regl_common.renderable =
       Regl_common.group effects [ composed ];
     ]
 
-let () =
-  Printf.printf "[fbo_grow] starting Regl_backend.create_app\n%!";
-  Regl_backend.create_app init update view;
-  Printf.printf "[fbo_grow] create_app returned cleanly\n%!"
+let () = Regl_backend.create_app init update view

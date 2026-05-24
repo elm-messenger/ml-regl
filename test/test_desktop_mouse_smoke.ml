@@ -12,8 +12,8 @@
    - Mouse buttons should use SDL numbering: left=1, middle=2, right=3.
 
    The test also performs runtime assertions for any received mouse event: if a
-   coordinate escapes the virtual canvas bounds (with tiny tolerance), it logs a
-   failure, shows it on screen, and exits non-zero after the window closes. *)
+   coordinate escapes the virtual canvas bounds (with tiny tolerance), it shows
+   the failure on screen and exits non-zero after the window closes. *)
 
 open Ml_regl_core
 open Ml_regl_core.Regl_proto
@@ -74,7 +74,6 @@ let validate_sample s failures =
   | _ -> failures
 
 let record_sample m sample =
-  Printf.printf "[mouse-smoke] %s\n%!" (sample_label (Some sample));
   let failures = validate_sample sample m.failures in
   if List.length failures > List.length m.failures then had_failure := true;
   {
@@ -101,9 +100,6 @@ let init () : model * regl_output list =
       load_font "custom" "test/assets/custom.png" "test/assets/custom-msdf.json";
     ]
   in
-  Printf.printf
-    "[mouse-smoke] started: resize window, move/click. Expected virtual canvas %.0fx%.0f; auto-quit after %.0fs.\n%!"
-    virt_w virt_h (quit_after_ms /. 1000.0);
   ( {
       ts = 0.0;
       frame = 0;
@@ -117,13 +113,9 @@ let init () : model * regl_output list =
     cmds )
 
 let maybe_quit m =
-  if (not m.quitting) && m.ts >= quit_after_ms then begin
-    Printf.printf
-      "[mouse-smoke] summary: moves=%d downs=%d ups=%d failures=%d\n%!"
-      m.move_count m.down_count m.up_count (List.length m.failures);
+  if (not m.quitting) && m.ts >= quit_after_ms then
     ( { m with quitting = true },
       [ quit_regl () ] )
-  end
   else (m, [])
 
 let update (m : model) (input : regl_input) :
@@ -189,10 +181,5 @@ let view (m : model) : Regl_common.renderable =
     @ cursor_shapes @ failure_lines)
 
 let () =
-  Printf.printf "[mouse-smoke] starting Regl_backend.create_app\n%!";
   Regl_backend.create_app init update view;
-  if !had_failure then begin
-    Printf.eprintf "[mouse-smoke] FAILED: at least one mouse event was outside virtual-coordinate expectations\n%!";
-    exit 1
-  end;
-  Printf.printf "[mouse-smoke] create_app returned cleanly\n%!"
+  if !had_failure then exit 1

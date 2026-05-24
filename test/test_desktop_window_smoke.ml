@@ -59,9 +59,6 @@ let init () : model * regl_output list =
       load_font "custom" "test/assets/custom.png" "test/assets/custom-msdf.json";
     ]
   in
-  Printf.printf "[window-smoke] init: shipping %d commands; %s\n%!"
-    (List.length cmds)
-    (phase_label P0_NonResizable);
   ({ ts = 0.0; frame = 0; phase = P0_NonResizable }, cmds)
 
 let advance_phase (m : model) : model * regl_output list =
@@ -91,11 +88,8 @@ let advance_phase (m : model) : model * regl_output list =
     | P3_FullscreenOff -> (frame_quit, P4_Quitting, [ quit_regl () ])
     | P4_Quitting -> (max_int, P4_Quitting, [])
   in
-  if m.frame = next_at && next_phase <> m.phase then begin
-    Printf.printf "[window-smoke] frame=%d -> %s\n%!" m.frame
-      (phase_label next_phase);
+  if m.frame = next_at && next_phase <> m.phase then
     ({ m with phase = next_phase }, cmds)
-  end
   else (m, [])
 
 let update (m : model) (input : regl_input) :
@@ -133,7 +127,4 @@ let view (m : model) : Regl_common.renderable =
         "custom" (Color.rgb 0.7 0.7 0.7);
     ]
 
-let () =
-  Printf.printf "[window-smoke] starting Regl_backend.create_app\n%!";
-  Regl_backend.create_app init update view;
-  Printf.printf "[window-smoke] create_app returned cleanly\n%!"
+let () = Regl_backend.create_app init update view

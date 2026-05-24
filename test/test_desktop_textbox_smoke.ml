@@ -35,7 +35,6 @@ let init () : model * regl_output list =
       load_font font_name font_png font_json;
     ]
   in
-  Printf.printf "[textbox-smoke] init: loading font %s\n%!" font_name;
   ({ ts = 0.0; frame = 0; font_loaded = false }, cmds)
 
 let update (m : model) (input : regl_input) :
@@ -46,10 +45,8 @@ let update (m : model) (input : regl_input) :
         let frame = m.frame + 1 in
         ({ m with ts; frame }, [])
     | REGLRecvMsg (REGLFontLoaded name) when name = font_name ->
-        Printf.printf "[textbox-smoke] font_loaded %s\n%!" name;
         ({ m with font_loaded = true }, [])
     | REGLRecvMsg (REGLFontLoadFail name) when name = font_name ->
-        Printf.printf "[textbox-smoke] font_loadfail %s\n%!" name;
         (m, [])
     | _ -> (m, [])
   in
@@ -180,7 +177,4 @@ let view (m : model) : Regl_common.renderable =
       right_bottom_case;
     ]
 
-let () =
-  Printf.printf "[textbox-smoke] starting Regl_backend.create_app\n%!";
-  Regl_backend.create_app init update view;
-  Printf.printf "[textbox-smoke] create_app returned cleanly\n%!"
+let () = Regl_backend.create_app init update view

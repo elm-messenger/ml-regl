@@ -20,7 +20,7 @@
    both URLs. - 60: start OGG. - 300: drop OGG volume to 0.3. - 400: start WAV
    at 2.0x playback rate. - 600: enable WAV loop region. - 800: unload OGG
    buffer mid-play (live release path). - 1000: stop everything (return
-   Regl_audio.silence). - 1200: unload remaining WAV. - 1300: print PASS/FAIL.
+   Regl_audio.silence). - 1200: unload remaining WAV. - 1300: quit.
 
    Expected action shape per phase: - frame 60 : StartSound (ogg) - frame 300 :
    SetVolume (ogg, 0.30) - frame 350 : SetVolumeAt(ogg, 3 points) - frame 400 :
@@ -83,8 +83,6 @@ let init () : model * regl_output list =
       load_font "custom" "test/assets/custom.png" "test/assets/custom-msdf.json";
     ]
   in
-  Printf.printf "[audio-smoke] init: shipping %d commands\n%!"
-    (List.length cmds);
   ( {
       ts = 0.0;
       frame = 0;
@@ -149,68 +147,36 @@ let update (m : model) (input : regl_input) :
         let frame' = m.frame + 1 in
         let m1 = { m with ts; frame = frame' } in
         let m2, extras =
-          if frame' = 60 && not m1.ogg_started then begin
-            Printf.printf "[audio-smoke] frame %d: start OGG @ts=%.0fms\n%!"
-              frame' m1.ts;
+          if frame' = 60 && not m1.ogg_started then
             ({ m1 with ogg_started = true; ogg_start_ts = m1.ts }, [])
-          end
-          else if frame' = 300 && not m1.ogg_volume_dropped then begin
-            Printf.printf "[audio-smoke] frame %d: drop OGG volume to 0.3\n%!"
-              frame';
+          else if frame' = 300 && not m1.ogg_volume_dropped then
             ({ m1 with ogg_volume_dropped = true }, [])
-          end
-          else if frame' = 350 && not m1.ogg_timeline_set then begin
-            Printf.printf
-              "[audio-smoke] frame %d: install OGG volume timeline\n%!" frame';
+          else if frame' = 350 && not m1.ogg_timeline_set then
             ({ m1 with ogg_timeline_set = true }, [])
-          end
-          else if frame' = 400 && not m1.wav_started then begin
-            Printf.printf
-              "[audio-smoke] frame %d: start WAV @2.0x ts=%.0fms\n%!" frame'
-              m1.ts;
+          else if frame' = 400 && not m1.wav_started then
             ({ m1 with wav_started = true; wav_start_ts = m1.ts }, [])
-          end
-          else if frame' = 600 && not m1.wav_looped then begin
-            Printf.printf
-              "[audio-smoke] frame %d: enable WAV loop [200..800ms]\n%!" frame';
+          else if frame' = 600 && not m1.wav_looped then
             ({ m1 with wav_looped = true }, [])
-          end
           else if frame' = 800 && not m1.ogg_unloaded_live then begin
-            Printf.printf
-              "[audio-smoke] frame %d: unload OGG buffer mid-play\n%!" frame';
             (* Voice stays in the [describe_audio] tree, so OCaml emits no
                StopSound. The C++ ReleaseBuffer path is responsible for
                silencing the still-running voice before freeing the buffer. *)
             ({ m1 with ogg_unloaded_live = true }, [ unload_audio ogg_url ])
           end
-          else if frame' = 1000 && not m1.stopped then begin
-            Printf.printf "[audio-smoke] frame %d: stop everything\n%!" frame';
+          else if frame' = 1000 && not m1.stopped then
             ({ m1 with stopped = true }, [])
-          end
-          else if frame' = 1200 && not m1.unloaded then begin
-            Printf.printf "[audio-smoke] frame %d: unload remaining WAV\n%!"
-              frame';
+          else if frame' = 1200 && not m1.unloaded then
             ({ m1 with unloaded = true }, [ unload_audio wav_url ])
-          end
-          else if frame' = 1300 && not m1.finished then begin
-            Printf.printf
-              "[audio-smoke] frame %d: end of test, checking trace\n%!" frame';
+          else if frame' = 1300 && not m1.finished then
             ({ m1 with finished = true }, [ quit_regl () ])
-          end
           else (m1, [])
         in
         (m2, extras)
-    | Event (KeyDown code) ->
-        Printf.printf "[audio-smoke] key %s\n%!" code;
+    | Event (KeyDown _) ->
         (m, [])
     | AudioMsg (AudioContextReady { sample_rate }) ->
-        Printf.printf "[audio-smoke] AudioContextReady sr=%d\n%!" sample_rate;
         ({ m with ctx_sr = Some sample_rate }, [])
     | AudioMsg (AudioLoadSuccess { audio_url; source }) ->
-        Printf.printf
-          "[audio-smoke] AudioLoadSuccess url=%s buffer_id=%d duration=%.3fs\n\
-           %!"
-          audio_url source.buffer_id source.duration;
         let m =
           if audio_url = ogg_url then { m with ogg = Ready source }
           else if audio_url = wav_url then { m with wav = Ready source }
@@ -218,7 +184,6 @@ let update (m : model) (input : regl_input) :
         in
         (m, [])
     | AudioMsg (AudioLoadFailed { audio_url; _ }) ->
-        Printf.printf "[audio-smoke] AudioLoadFailed url=%s\n%!" audio_url;
         let m =
           if audio_url = ogg_url then { m with ogg = Failed }
           else if audio_url = wav_url then { m with wav = Failed }
@@ -266,7 +231,4 @@ let view (m : model) : Regl_common.renderable =
       line phase_text 140. (Color.rgb 0.95 0.5 0.95);
     ]
 
-let () =
-  Printf.printf "[audio-smoke] starting Regl_backend.create_app\n%!";
-  Regl_backend.create_app init update view;
-  Printf.printf "[audio-smoke] create_app returned cleanly\n%!"
+let () = Regl_backend.create_app init update view

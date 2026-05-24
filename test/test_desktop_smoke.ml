@@ -1,6 +1,6 @@
 (* Cross-backend smoke test — opens a window via [Regl_backend.create_app],
    draws one of every M3.C 2D primitive (triangle, rect, circle, roundedRect,
-   clear), prints a few lifecycle events, and exits when the window is closed.
+   clear), receives a few lifecycle events, and exits when the window is closed.
    Same source compiles for either backend; the choice is made in the dune
    executable stanza via the (libraries ...) field. *)
 
@@ -43,7 +43,6 @@ let init () : model * regl_output list =
       load_font "custom" "test/assets/custom.png" "test/assets/custom-msdf.json";
     ]
   in
-  Printf.printf "[smoke] init: shipping %d commands\n%!" (List.length cmds);
   ( {
       ts = 0.0;
       events = 0;
@@ -80,31 +79,22 @@ let update (m : model) (input : regl_input) :
           ( { m with ts; frame = frame'; late_reload_shipped = true },
             [ load_texture "enemy_late" "test/assets/enemy.png" None ] )
         else ({ m with ts; frame = frame' }, [])
-    | Regl_proto.Event (Regl_proto.MouseDown { button; x; y }) ->
-        Printf.printf "[smoke] mouse_down b=%d x=%g y=%g\n%!" button x y;
+    | Regl_proto.Event (Regl_proto.MouseDown { button = _; x = _; y = _ }) ->
         ({ m with events = m.events + 1 }, [])
-    | Regl_proto.Event (Regl_proto.MouseUp { button; x; y }) ->
-        Printf.printf "[smoke] mouse_up b=%d x=%g y=%g\n%!" button x y;
+    | Regl_proto.Event (Regl_proto.MouseUp { button = _; x = _; y = _ }) ->
         ({ m with events = m.events + 1 }, [])
-    | Regl_proto.Event (Regl_proto.KeyDown code) ->
-        Printf.printf "[smoke] key_down %s\n%!" code;
+    | Regl_proto.Event (Regl_proto.KeyDown _) ->
         ({ m with events = m.events + 1 }, [])
-    | Regl_proto.Event (Regl_proto.KeyUp code) ->
-        Printf.printf "[smoke] key_up %s\n%!" code;
+    | Regl_proto.Event (Regl_proto.KeyUp _) ->
         ({ m with events = m.events + 1 }, [])
     | Regl_proto.REGLRecvMsg
-        (Regl_proto.REGLTextureLoaded { name; width; height }) ->
-        Printf.printf "[smoke] texture_loaded name=%s %dx%d\n%!" name width
-          height;
+        (Regl_proto.REGLTextureLoaded { name = _; width = _; height = _ }) ->
         ({ m with events = m.events + 1 }, [])
-    | Regl_proto.REGLRecvMsg (Regl_proto.REGLTextureLoadFail name) ->
-        Printf.printf "[smoke] texture_loadfail name=%s\n%!" name;
+    | Regl_proto.REGLRecvMsg (Regl_proto.REGLTextureLoadFail _) ->
         ({ m with events = m.events + 1 }, [])
-    | Regl_proto.REGLRecvMsg (Regl_proto.REGLFontLoaded name) ->
-        Printf.printf "[smoke] font_loaded name=%s\n%!" name;
+    | Regl_proto.REGLRecvMsg (Regl_proto.REGLFontLoaded _) ->
         ({ m with events = m.events + 1 }, [])
-    | Regl_proto.REGLRecvMsg (Regl_proto.REGLFontLoadFail name) ->
-        Printf.printf "[smoke] font_loadfail name=%s\n%!" name;
+    | Regl_proto.REGLRecvMsg (Regl_proto.REGLFontLoadFail _) ->
         ({ m with events = m.events + 1 }, [])
     | _ -> (m, [])
   in
@@ -189,7 +179,4 @@ let view (m : model) : Regl_common.renderable =
         };
     ]
 
-let () =
-  Printf.printf "[smoke] starting Regl_backend.create_app\n%!";
-  Regl_backend.create_app init update view;
-  Printf.printf "[smoke] create_app returned cleanly\n%!"
+let () = Regl_backend.create_app init update view

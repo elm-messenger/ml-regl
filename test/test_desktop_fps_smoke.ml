@@ -3,8 +3,7 @@
    Walks through several pacing configs by shipping [config_regl
    (ConfigTimeInterval ...)] mid-run and measures the actual achieved frame
    interval over a sliding window. The on-screen text shows the requested target
-   vs the measured average so the pacing change is obvious at a glance, and the
-   same numbers are printed at each phase boundary. *)
+   vs the measured average so the pacing change is obvious at a glance. *)
 
 open Ml_regl_core
 open Ml_regl_core.Regl_proto
@@ -62,7 +61,6 @@ let init () : model * regl_output list =
       load_font "custom" "test/assets/custom.png" "test/assets/custom-msdf.json";
     ]
   in
-  Printf.printf "[fps-smoke] init: %s\n%!" (phase_label P0_Vsync);
   ({ ts = 0.0; frame = 0; phase = P0_Vsync; history = [] }, cmds)
 
 (* Push a new sample, drop the oldest if over capacity. *)
@@ -104,13 +102,10 @@ let advance_phase (m : model) : model * regl_output list =
     | P4_BackToVsync -> (t_quit, P5_Quitting, [ quit_regl () ])
     | P5_Quitting -> (Float.infinity, P5_Quitting, [])
   in
-  if m.ts >= next_at && next_phase <> m.phase then begin
-    Printf.printf "[fps-smoke] t=%.0fms frame=%d  measured=%.2f fps  -> %s\n%!"
-      m.ts m.frame (measured_fps m.history) (phase_label next_phase);
+  if m.ts >= next_at && next_phase <> m.phase then
     (* Reset history so the post-transition measurement isn't contaminated by
        the previous phase's interval. *)
     ({ m with phase = next_phase; history = [] }, cmds)
-  end
   else (m, [])
 
 let update (m : model) (input : regl_input) :
@@ -162,7 +157,4 @@ let view (m : model) : Regl_common.renderable =
         (Color.rgb 0.7 0.7 0.7);
     ]
 
-let () =
-  Printf.printf "[fps-smoke] starting Regl_backend.create_app\n%!";
-  Regl_backend.create_app init update view;
-  Printf.printf "[fps-smoke] create_app returned cleanly\n%!"
+let () = Regl_backend.create_app init update view
