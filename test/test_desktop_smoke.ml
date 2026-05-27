@@ -40,7 +40,8 @@ let init () : model * regl_output list =
          back a [REGLFontLoaded] event. The walker's [textbox] branch silently
          no-ops on draws referencing this font until the load completes (mirrors
          the JS backend's first-frame async-load tolerance). *)
-      load_font "custom" "test/assets/custom.png" "test/assets/custom-msdf.json";
+      load_font "consolas" "test/assets/Consolas.png"
+        "test/assets/Consolas.json";
     ]
   in
   ( {
@@ -163,14 +164,14 @@ let view (m : model) : Regl_common.renderable =
          math; the third uses [textbox_pro] with non-default options
          (size/wordSpacing/letterSpacing/ color) to exercise the field-pull
          path. *)
-      Regl_builtin_programs.textbox (40., 40.) 24.0 "hello world" "custom"
+      Regl_builtin_programs.textbox (40., 40.) 24.0 "hello world" "consolas"
         (Color.rgb 1.0 1.0 1.0);
       Regl_builtin_programs.textbox_centered (400., 300.) 48.0 "ml-regl"
-        "custom" (Color.rgb 0.95 0.95 0.2);
+        "consolas" (Color.rgb 0.95 0.95 0.2);
       Regl_builtin_programs.textbox_pro (40., 540.)
         {
           Regl_builtin_programs.default_textbox_option with
-          fonts = [ "custom" ];
+          fonts = [ "consolas" ];
           text = "the quick brown fox jumps over 13 lazy dogs!";
           size = 18.0;
           color = Color.rgb 0.5 0.9 1.0;

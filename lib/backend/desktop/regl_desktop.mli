@@ -15,8 +15,8 @@
     mirroring the JS backend, where [start()] is what triggers
     [requestAnimationFrame(step)].
 
-    The loop calls back into OCaml on every event ([h.event]) / frame
-    ([h.view]) using [caml_callback], all on the same thread (so no
+    The loop calls back into OCaml on every event ([h.event]) / frame ([h.view])
+    using [caml_callback], all on the same thread (so no
     [caml_acquire_runtime_system] dance is needed). Per-frame ticks are
     delivered as [UpdateTick] events through [h.event], same as in the JS
     backend. When the user closes the window, the loop returns,

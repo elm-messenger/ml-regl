@@ -6,7 +6,7 @@
    [italic], - bold/MSDF weight via [thickness], - centered/right/bottom
    alignment and spacing options.
 
-   The bundled custom MSDF atlas is intentionally small, so all visible test
+   The bundled Consolas MSDF atlas is intentionally small, so all visible test
    strings stay lowercase/digits/basic punctuation to avoid missing glyphs. *)
 
 open Ml_regl_core
@@ -16,9 +16,9 @@ type model = { ts : float; frame : int; font_loaded : bool }
 
 let virt_w = 1280.0
 let virt_h = 720.0
-let font_name = "custom"
-let font_png = "test/assets/custom.png"
-let font_json = "test/assets/custom-msdf.json"
+let font_name = "consolas"
+let font_png = "test/assets/Consolas.png"
+let font_json = "test/assets/Consolas.json"
 
 let init () : model * regl_output list =
   let cmds =
@@ -46,8 +46,7 @@ let update (m : model) (input : regl_input) :
         ({ m with ts; frame }, [])
     | REGLRecvMsg (REGLFontLoaded name) when name = font_name ->
         ({ m with font_loaded = true }, [])
-    | REGLRecvMsg (REGLFontLoadFail name) when name = font_name ->
-        (m, [])
+    | REGLRecvMsg (REGLFontLoadFail name) when name = font_name -> (m, [])
     | _ -> (m, [])
   in
   (m, Regl_audio.silence, cmds)

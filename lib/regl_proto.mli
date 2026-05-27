@@ -50,6 +50,10 @@ type regl_recv_msg =
   | REGLFontLoadFail of string
   | REGLProgramCreated of string
   | REGLProgramCreateFail of string
+  | REGLValueRead of { key : string; value : string }
+  | REGLValueReadMissing of string
+  | REGLFileLoaded of { path : string; data : string }
+  | REGLFileLoadFailed of { path : string; reason : string }
 
 type audio_recv_msg =
   | AudioLoadSuccess of { audio_url : string; source : Regl_audio.source }
@@ -110,6 +114,18 @@ val quit_regl : unit -> regl_output
 (** Ask the backend to exit its run loop. The backend tears down its
     window/GL/audio state and the host process resumes. On hosts that don't own
     the run loop (e.g. the JS backend) this is a no-op. *)
+
+val save_value : string -> string -> regl_output
+(** Store a string value under a string key in backend key-value storage. This
+    is fire-and-forget; no success event is emitted. *)
+
+val read_value : string -> regl_output
+(** Read a string value from backend key-value storage. Emits [REGLValueRead] or
+    [REGLValueReadMissing]. *)
+
+val load_file : string -> regl_output
+(** Load a text file/resource by path. Desktop reads from the filesystem; JS
+    uses [fetch]. Emits [REGLFileLoaded] or [REGLFileLoadFailed]. *)
 
 type regl_event =
   | UpdateTick of float

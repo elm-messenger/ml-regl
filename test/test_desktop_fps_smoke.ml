@@ -58,7 +58,8 @@ let init () : model * regl_output list =
           window = default_window_config;
         };
       config_regl (ConfigTimeInterval AnimationFrame);
-      load_font "custom" "test/assets/custom.png" "test/assets/custom-msdf.json";
+      load_font "consolas" "test/assets/Consolas.png"
+        "test/assets/Consolas.json";
     ]
   in
   ({ ts = 0.0; frame = 0; phase = P0_Vsync; history = [] }, cmds)
@@ -147,13 +148,13 @@ let view (m : model) : Regl_common.renderable =
       Regl_builtin_programs.rect_centered (400., 360.) (160., 90.) angle
         (Color.rgb 0.95 0.85 0.2);
       Regl_builtin_programs.textbox (20., 40.) 22.0 (phase_label m.phase)
-        "custom" (Color.rgb 1.0 1.0 1.0);
+        "consolas" (Color.rgb 1.0 1.0 1.0);
       Regl_builtin_programs.textbox (20., 90.) 18.0
         (Printf.sprintf "measured: %.2f fps  (frame=%d  t=%.0fms)" fps m.frame
            m.ts)
-        "custom" (Color.rgb 0.85 0.95 0.85);
+        "consolas" (Color.rgb 0.85 0.95 0.85);
       Regl_builtin_programs.textbox (20., 130.) 16.0
-        "watch the spinning rect: smooth at vsync, steppy at 10 fps" "custom"
+        "watch the spinning rect: smooth at vsync, steppy at 10 fps" "consolas"
         (Color.rgb 0.7 0.7 0.7);
     ]
 

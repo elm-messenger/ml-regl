@@ -149,6 +149,39 @@
  (flags
   (:standard -warn-error -A)))
 
+; --- test_storage_file_smoke: backend KV/file I/O E2E ------------------
+; Cross-backend: exercises SaveValue / ReadValue / LoadFile, including missing
+; key/file paths. JS maps storage to localStorage + LoadFile to fetch; desktop
+; maps storage/file I/O through AssetLoader.
+
+(executable
+ (name test_storage_file_smoke)
+ (modules test_storage_file_smoke)
+ (libraries js_of_ocaml ml_regl_js)
+ (modes js)
+ (preprocess
+  (pps js_of_ocaml-ppx))
+ (flags
+  (:standard -warn-error -A))
+ (js_of_ocaml
+  (flags
+   (:standard --opt=3))))
+
+(executable
+ (name test_storage_file_smoke_desktop)
+ (modules test_storage_file_smoke_desktop)
+ (libraries ml_regl_desktop)
+ (modes
+  (native exe))
+ (flags
+  (:standard -warn-error -A)))
+
+(rule
+ (target test_storage_file_smoke_desktop.ml)
+ (deps test_storage_file_smoke.ml)
+ (action
+  (copy %{deps} %{target})))
+
 ; --- test_desktop_fps_smoke: runtime frame-rate change E2E -------------
 ; Desktop-only: ships ConfigRegl/ConfigTimeInterval mid-run and
 ; visualises the achieved fps so vsync vs manual pacing is observable.

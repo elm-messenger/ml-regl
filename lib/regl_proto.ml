@@ -46,6 +46,10 @@ type regl_recv_msg =
   | REGLFontLoadFail of string
   | REGLProgramCreated of string
   | REGLProgramCreateFail of string
+  | REGLValueRead of { key : string; value : string }
+  | REGLValueReadMissing of string
+  | REGLFileLoaded of { path : string; data : string }
+  | REGLFileLoadFailed of { path : string; reason : string }
 
 type audio_recv_msg =
   | AudioLoadSuccess of { audio_url : string; source : Regl_audio.source }
@@ -121,6 +125,11 @@ let decode_backend_event_pb (payload : bytes) : regl_recv_msg option =
     | `Font_loadfail name -> Some (REGLFontLoadFail name)
     | `Program_created name -> Some (REGLProgramCreated name)
     | `Program_createfail name -> Some (REGLProgramCreateFail name)
+    | `Value_read { key; value } -> Some (REGLValueRead { key; value })
+    | `Value_read_missing key -> Some (REGLValueReadMissing key)
+    | `File_loaded { path; data } -> Some (REGLFileLoaded { path; data })
+    | `File_load_failed { path; reason } ->
+        Some (REGLFileLoadFailed { path; reason })
     | `not_set -> None
   with _ -> None
 
@@ -203,6 +212,21 @@ let unload_audio audio_url =
 let quit_regl () =
   Backend_pb.BackendCommand.make
     ~kind:(`Quit_regl (Backend_pb.QuitRegl.make ()))
+    ()
+
+let save_value key value =
+  Backend_pb.BackendCommand.make
+    ~kind:(`Save_value (Backend_pb.SaveValue.make ~key ~value ()))
+    ()
+
+let read_value key =
+  Backend_pb.BackendCommand.make
+    ~kind:(`Read_value (Backend_pb.ReadValue.make ~key ()))
+    ()
+
+let load_file path =
+  Backend_pb.BackendCommand.make
+    ~kind:(`Load_file (Backend_pb.LoadFile.make ~path ()))
     ()
 
 type regl_event =

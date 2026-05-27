@@ -56,7 +56,8 @@ let init () : model * regl_output list =
           window = { fullscreen = None; resizable = Some false };
         };
       config_regl (ConfigTimeInterval AnimationFrame);
-      load_font "custom" "test/assets/custom.png" "test/assets/custom-msdf.json";
+      load_font "consolas" "test/assets/Consolas.png"
+        "test/assets/Consolas.json";
     ]
   in
   ({ ts = 0.0; frame = 0; phase = P0_NonResizable }, cmds)
@@ -118,13 +119,13 @@ let view (m : model) : Regl_common.renderable =
     [
       Regl_builtin_programs.clear bg_color;
       Regl_builtin_programs.textbox (20., 40.) 22.0 (phase_label m.phase)
-        "custom" (Color.rgb 1.0 1.0 1.0);
+        "consolas" (Color.rgb 1.0 1.0 1.0);
       Regl_builtin_programs.textbox (20., 90.) 18.0
         (Printf.sprintf "frame=%d  ts=%.0fms" m.frame m.ts)
-        "custom" (Color.rgb 0.85 0.85 0.85);
+        "consolas" (Color.rgb 0.85 0.85 0.85);
       Regl_builtin_programs.textbox (20., 130.) 16.0
         "drag the window edge to verify resizable; watch for fullscreen flip"
-        "custom" (Color.rgb 0.7 0.7 0.7);
+        "consolas" (Color.rgb 0.7 0.7 0.7);
     ]
 
 let () = Regl_backend.create_app init update view

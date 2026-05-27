@@ -381,8 +381,8 @@ let init () =
       load_texture texture_name texture_url None;
       load_texture cropped_texture_name texture_url texture_opts;
       load_audio audio_url;
-      load_font "consolas" "test/assets/custom.png"
-        "test/assets/custom-msdf.json";
+      load_font "consolas" "test/assets/Consolas.png"
+        "test/assets/Consolas.json";
       create_regl_program custom_program_name custom_program;
     ] )
 

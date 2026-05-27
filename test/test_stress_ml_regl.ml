@@ -113,8 +113,8 @@ let init () =
       start_regl startconfig;
       config_regl (ConfigTimeInterval (Millisecond 0.01));
       load_texture texture_name texture_url None;
-      load_font "consolas" "test/assets/custom.png"
-        "test/assets/custom-msdf.json";
+      load_font "consolas" "test/assets/Consolas.png"
+        "test/assets/Consolas.json";
     ] )
 
 let update (m : model) (e : regl_input) =

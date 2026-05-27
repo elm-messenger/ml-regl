@@ -80,7 +80,8 @@ let init () : model * regl_output list =
       config_regl (ConfigTimeInterval AnimationFrame);
       load_audio ogg_url;
       load_audio wav_url;
-      load_font "custom" "test/assets/custom.png" "test/assets/custom-msdf.json";
+      load_font "consolas" "test/assets/Consolas.png"
+        "test/assets/Consolas.json";
     ]
   in
   ( {
@@ -172,8 +173,7 @@ let update (m : model) (input : regl_input) :
           else (m1, [])
         in
         (m2, extras)
-    | Event (KeyDown _) ->
-        (m, [])
+    | Event (KeyDown _) -> (m, [])
     | AudioMsg (AudioContextReady { sample_rate }) ->
         ({ m with ctx_sr = Some sample_rate }, [])
     | AudioMsg (AudioLoadSuccess { audio_url; source }) ->
@@ -203,7 +203,7 @@ let state_label = function
 let view (m : model) : Regl_common.renderable =
   let bg = Regl_builtin_programs.clear (Color.rgb 0.05 0.07 0.10) in
   let line text y color =
-    Regl_builtin_programs.textbox (20., y) 18.0 text "custom" color
+    Regl_builtin_programs.textbox (20., y) 18.0 text "consolas" color
   in
   let sr_text =
     match m.ctx_sr with

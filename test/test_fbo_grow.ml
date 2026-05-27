@@ -1,26 +1,24 @@
 (* Cross-backend test for dynamic FBO pool growth.
 
-   Ships [start_regl] with [fbo_num = 1] — the smallest legal seed —
-   then renders a tree that demands many simultaneous FBO palettes.
-   On every frame the renderer is forced to grow the pool past its
-   seed:
+   Ships [start_regl] with [fbo_num = 1] — the smallest legal seed — then
+   renders a tree that demands many simultaneous FBO palettes. On every frame
+   the renderer is forced to grow the pool past its seed:
 
-   - A [composite] needs three palettes at once: left input, right
-     input, and the composite's own output. Two of these are atomics
-     so each gets its own palette via [drawRenderable].
-   - Wrapping the composite in a [group] with N effects forces N more
-     ping-pong allocations as each effect acquires a fresh palette.
-   - The outer view [group] holds the resulting palette while the
-     top-level [palette] passthrough is bound, holding one more.
+   - A [composite] needs three palettes at once: left input, right input, and
+   the composite's own output. Two of these are atomics so each gets its own
+   palette via [drawRenderable]. - Wrapping the composite in a [group] with N
+   effects forces N more ping-pong allocations as each effect acquires a fresh
+   palette. - The outer view [group] holds the resulting palette while the
+   top-level [palette] passthrough is bound, holding one more.
 
-   Grand total: at least 5 distinct palettes alive across one frame.
-   With [fbo_num = 1], the C++ backend logs a warning and grows the
-   pool; the JS backend (`getFreePalette` in ml-regl-js/src/app.js)
-   already does the same. Both should render identical visible
-   output: a colour band that fades over time.
+   Grand total: at least 5 distinct palettes alive across one frame. With
+   [fbo_num = 1], the C++ backend logs a warning and grows the pool; the JS
+   backend (`getFreePalette` in ml-regl-js/src/app.js) already does the same.
+   Both should render identical visible output: a colour band that fades over
+   time.
 
-   Same source compiles for either backend; the choice is made in the
-   dune executable stanza via the [(libraries ...)] field. *)
+   Same source compiles for either backend; the choice is made in the dune
+   executable stanza via the [(libraries ...)] field. *)
 
 open Ml_regl_core
 open Ml_regl_core.Regl_proto
@@ -37,10 +35,9 @@ let init () : model * regl_output list =
         {
           virt_width = virt_w;
           virt_height = virt_h;
-          (* Seed the pool at 1. The renderer needs many more
-             palettes per frame than this; both backends must grow
-             the pool dynamically or the visible output will be
-             wrong (sub-trees silently drop). *)
+          (* Seed the pool at 1. The renderer needs many more palettes per frame
+             than this; both backends must grow the pool dynamically or the
+             visible output will be wrong (sub-trees silently drop). *)
           fbo_num = 1;
           builtin_programs = None;
           window = default_window_config;
@@ -58,10 +55,10 @@ let update (m : model) (input : regl_input) :
       ({ ts; frame = frame' }, Regl_audio.silence, [])
   | _ -> (m, Regl_audio.silence, [])
 
-(* Build a renderable that *must* hold more than one palette
-   simultaneously. We use a composite of two atomic-bearing groups
-   wrapped by a group carrying a chain of effects; effects acquire one
-   new palette per pass while the previous result is still alive. *)
+(* Build a renderable that *must* hold more than one palette simultaneously. We
+   use a composite of two atomic-bearing groups wrapped by a group carrying a
+   chain of effects; effects acquire one new palette per pass while the previous
+   result is still alive. *)
 let view (m : model) : Regl_common.renderable =
   let tau = 2.0 *. Float.pi in
   let norm_angle a =
@@ -71,15 +68,14 @@ let view (m : model) : Regl_common.renderable =
   let phase = norm_angle (m.ts *. 0.001) in
   let pulse = 0.5 +. (0.5 *. sin phase) in
 
-  (* Two non-trivial sub-trees, each of which the walker turns into a
-     single palette via [drawRenderable]. *)
+  (* Two non-trivial sub-trees, each of which the walker turns into a single
+     palette via [drawRenderable]. *)
   let left =
     Regl_common.group []
       [
         Regl_builtin_programs.rect (60., 100.) (260., 380.)
           (Color.rgb 0.85 0.30 0.30);
-        Regl_builtin_programs.circle (190., 280.) 80.
-          (Color.rgb 0.95 0.85 0.20);
+        Regl_builtin_programs.circle (190., 280.) 80. (Color.rgb 0.95 0.85 0.20);
       ]
   in
   let right =
@@ -91,13 +87,13 @@ let view (m : model) : Regl_common.renderable =
           (Color.rgb 0.30 0.85 0.40);
       ]
   in
-  (* [linear_fade] is a composite: at draw time the walker holds
-     palettes for [left], [right], AND the composite's own output
-     palette simultaneously — already 3 palettes alive. *)
+  (* [linear_fade] is a composite: at draw time the walker holds palettes for
+     [left], [right], AND the composite's own output palette simultaneously —
+     already 3 palettes alive. *)
   let composed = Regl_compositors.linear_fade pulse left right in
-  (* Effects pile on more concurrent palettes — each effect pass
-     acquires a fresh palette while the previous one is still bound
-     as the source texture. *)
+  (* Effects pile on more concurrent palettes — each effect pass acquires a
+     fresh palette while the previous one is still bound as the source
+     texture. *)
   let effects =
     [
       Regl_effects.color_mult 1.0 0.95 0.85 1.0;
