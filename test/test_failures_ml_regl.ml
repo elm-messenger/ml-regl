@@ -23,6 +23,8 @@ let init () =
       load_texture missing_texture_name "/test/assets/DOES_NOT_EXIST.png" None;
       load_font missing_font_name "/test/assets/DOES_NOT_EXIST.png"
         "/test/assets/DOES_NOT_EXIST.json";
+      load_font "consolas" "test/assets/Consolas.png"
+        "test/assets/Consolas.json";
     ] )
 
 let update (m : model) (e : regl_input) =
@@ -47,7 +49,7 @@ let view (m : model) =
   in
   Regl_common.group []
     [
-      Regl_builtin_programs.clear (Color.rgb 0.98 0.98 0.99);
+      Regl_builtin_programs.clear (Color.white);
       Regl_builtin_programs.textbox (16.0, 40.0) 30.0
         "Test: missing texture/font should fail" "consolas" Color.black;
       Regl_builtin_programs.textbox (16.0, 90.0) 26.0 status "consolas"
