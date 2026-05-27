@@ -1,4 +1,4 @@
-(* Desktop-only textbox smoke test.
+(* Cross-backend textbox smoke test.
 
    Exercises the frontend textbox API and the desktop textbox renderer with: -
    explicit multiline strings, - width-based wrapping with [word_break = false],

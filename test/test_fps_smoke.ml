@@ -1,4 +1,4 @@
-(* Desktop-only smoke test for runtime frame-rate changes.
+(* Cross-backend smoke test for runtime frame-rate changes.
 
    Walks through several pacing configs by shipping [config_regl
    (ConfigTimeInterval ...)] mid-run and measures the actual achieved frame

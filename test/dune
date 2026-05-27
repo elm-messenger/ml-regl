@@ -107,34 +107,68 @@
  (action
   (copy %{deps} %{target})))
 
-; --- test_desktop_smoke: minimal triangle smoke test -------------------
-; (Also gets a js variant for consistency, even though the smoke test was
-; originally written for desktop verification.)
+; --- test_smoke: minimal primitive/resource smoke test -----------------
+; Cross-backend: draws core 2D primitives and exercises load/unload/reload.
 
 (executable
- (name test_desktop_smoke)
- (modules test_desktop_smoke)
+ (name test_smoke)
+ (modules test_smoke)
+ (libraries js_of_ocaml ml_regl_js)
+ (modes js)
+ (preprocess
+  (pps js_of_ocaml-ppx))
+ (flags
+  (:standard -warn-error -A))
+ (js_of_ocaml
+  (flags
+   (:standard --opt=3))))
+
+(executable
+ (name test_smoke_desktop)
+ (modules test_smoke_desktop)
  (libraries ml_regl_desktop)
  (modes
   (native exe))
  (flags
   (:standard -warn-error -A)))
 
-; --- test_desktop_audio_smoke: M6 audio E2E -----------------------------
-; Desktop-only: drives WAV (SDL3) + OGG (stb_vorbis) through libdeclgl's
-; AudioEngine and exercises start/stop/volume/playback_rate/unload.
-; There's no JS variant — the OCaml side is identical, but the audio
-; backend differs (Web Audio vs SDL3) and we just need to smoke-test the
-; native one.
+(rule
+ (target test_smoke_desktop.ml)
+ (deps test_smoke.ml)
+ (action
+  (copy %{deps} %{target})))
+
+; --- test_audio_smoke: audio E2E ----------------------------------------
+; Cross-backend: drives WAV + OGG through the selected backend and exercises
+; start/stop/volume/playback_rate/unload.
 
 (executable
- (name test_desktop_audio_smoke)
- (modules test_desktop_audio_smoke)
+ (name test_audio_smoke)
+ (modules test_audio_smoke)
+ (libraries js_of_ocaml ml_regl_js)
+ (modes js)
+ (preprocess
+  (pps js_of_ocaml-ppx))
+ (flags
+  (:standard -warn-error -A))
+ (js_of_ocaml
+  (flags
+   (:standard --opt=3))))
+
+(executable
+ (name test_audio_smoke_desktop)
+ (modules test_audio_smoke_desktop)
  (libraries ml_regl_desktop)
  (modes
   (native exe))
  (flags
   (:standard -warn-error -A)))
+
+(rule
+ (target test_audio_smoke_desktop.ml)
+ (deps test_audio_smoke.ml)
+ (action
+  (copy %{deps} %{target})))
 
 ; --- test_desktop_window_smoke: window-config E2E ----------------------
 ; Desktop-only: exercises both StartRegl.window (initial flags) and
@@ -182,40 +216,13 @@
  (action
   (copy %{deps} %{target})))
 
-; --- test_desktop_fps_smoke: runtime frame-rate change E2E -------------
-; Desktop-only: ships ConfigRegl/ConfigTimeInterval mid-run and
-; visualises the achieved fps so vsync vs manual pacing is observable.
+; --- test_fps_smoke: runtime frame-rate change E2E ---------------------
+; Cross-backend: ships ConfigRegl/ConfigTimeInterval mid-run and visualises the
+; achieved fps so host-native pacing vs manual pacing is observable.
 
 (executable
- (name test_desktop_fps_smoke)
- (modules test_desktop_fps_smoke)
- (libraries ml_regl_desktop)
- (modes
-  (native exe))
- (flags
-  (:standard -warn-error -A)))
-
-; --- test_desktop_mouse_smoke: mouse event coordinate E2E --------------
-; Desktop-only: displays MouseMove/MouseDown/MouseUp as received by OCaml and
-; asserts they stay within the StartRegl virtual canvas even when the window is
-; resized. The test is interactive but auto-quits after 20 seconds.
-
-(executable
- (name test_desktop_mouse_smoke)
- (modules test_desktop_mouse_smoke)
- (libraries ml_regl_desktop)
- (modes
-  (native exe))
- (flags
-  (:standard -warn-error -A)))
-
-; --- test_desktop_textbox_smoke: textbox layout/style E2E --------------
-; Cross-backend: exercises multiline, word wrap, wordBreak, italic skew,
-; MSDF thickness/boldness, and text alignment options.
-
-(executable
- (name test_desktop_textbox_smoke)
- (modules test_desktop_textbox_smoke)
+ (name test_fps_smoke)
+ (modules test_fps_smoke)
  (libraries js_of_ocaml ml_regl_js)
  (modes js)
  (preprocess
@@ -227,8 +234,8 @@
    (:standard --opt=3))))
 
 (executable
- (name test_desktop_textbox_smoke_desktop)
- (modules test_desktop_textbox_smoke_desktop)
+ (name test_fps_smoke_desktop)
+ (modules test_fps_smoke_desktop)
  (libraries ml_regl_desktop)
  (modes
   (native exe))
@@ -236,8 +243,73 @@
   (:standard -warn-error -A)))
 
 (rule
- (target test_desktop_textbox_smoke_desktop.ml)
- (deps test_desktop_textbox_smoke.ml)
+ (target test_fps_smoke_desktop.ml)
+ (deps test_fps_smoke.ml)
+ (action
+  (copy %{deps} %{target})))
+
+; --- test_mouse_smoke: mouse event coordinate E2E ----------------------
+; Cross-backend: displays MouseMove/MouseDown/MouseUp as received by OCaml and
+; asserts they stay within the StartRegl virtual canvas. The test is interactive
+; but auto-quits after 20 seconds on desktop.
+
+(executable
+ (name test_mouse_smoke)
+ (modules test_mouse_smoke)
+ (libraries js_of_ocaml ml_regl_js)
+ (modes js)
+ (preprocess
+  (pps js_of_ocaml-ppx))
+ (flags
+  (:standard -warn-error -A))
+ (js_of_ocaml
+  (flags
+   (:standard --opt=3))))
+
+(executable
+ (name test_mouse_smoke_desktop)
+ (modules test_mouse_smoke_desktop)
+ (libraries ml_regl_desktop)
+ (modes
+  (native exe))
+ (flags
+  (:standard -warn-error -A)))
+
+(rule
+ (target test_mouse_smoke_desktop.ml)
+ (deps test_mouse_smoke.ml)
+ (action
+  (copy %{deps} %{target})))
+
+; --- test_textbox_smoke: textbox layout/style E2E ----------------------
+; Cross-backend: exercises multiline, word wrap, wordBreak, italic skew,
+; MSDF thickness/boldness, and text alignment options.
+
+(executable
+ (name test_textbox_smoke)
+ (modules test_textbox_smoke)
+ (libraries js_of_ocaml ml_regl_js)
+ (modes js)
+ (preprocess
+  (pps js_of_ocaml-ppx))
+ (flags
+  (:standard -warn-error -A))
+ (js_of_ocaml
+  (flags
+   (:standard --opt=3))))
+
+(executable
+ (name test_textbox_smoke_desktop)
+ (modules test_textbox_smoke_desktop)
+ (libraries ml_regl_desktop)
+ (modes
+  (native exe))
+ (flags
+  (:standard -warn-error -A)))
+
+(rule
+ (target test_textbox_smoke_desktop.ml)
+ (deps test_textbox_smoke.ml)
  (action
   (copy %{deps} %{target})))
 

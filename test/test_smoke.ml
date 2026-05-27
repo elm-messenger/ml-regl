@@ -1,4 +1,4 @@
-(* Cross-backend smoke test — opens a window via [Regl_backend.create_app],
+(* Cross-backend smoke test — starts a backend via [Regl_backend.create_app],
    draws one of every M3.C 2D primitive (triangle, rect, circle, roundedRect,
    clear), receives a few lifecycle events, and exits when the window is closed.
    Same source compiles for either backend; the choice is made in the dune
@@ -35,11 +35,10 @@ let init () : model * regl_output list =
          BackendEvent in [update] below. URL is filesystem-relative to the
          working directory the binary is launched from. *)
       load_texture "enemy" "test/assets/enemy.png" None;
-      (* M3.F: ship a LoadFont. The desktop backend reads the JSON metrics off
-         disk, decodes the atlas PNG, registers a Font and a Texture, and ships
-         back a [REGLFontLoaded] event. The walker's [textbox] branch silently
-         no-ops on draws referencing this font until the load completes (mirrors
-         the JS backend's first-frame async-load tolerance). *)
+      (* M3.F: ship a LoadFont. The selected backend decodes the JSON metrics
+         and atlas PNG, registers a Font/Texture pair, and ships back a
+         [REGLFontLoaded] event. The textbox draw branch silently no-ops until
+         the font load completes. *)
       load_font "consolas" "test/assets/Consolas.png"
         "test/assets/Consolas.json";
     ]

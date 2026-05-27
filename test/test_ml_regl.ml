@@ -342,14 +342,14 @@ let view (m : model) =
       match m.sound with
       | Loading -> "Audio: loading..."
       | Loaded _ ->
-          if m.play_at <> None then "Audio: playing (click to retrigger)"
+          if m.play_at <> None then "Audio: playing (press space to retrigger)"
           else "Audio: ready"
       | Failed -> "Audio: failed to load"
     in
     Regl_builtin_programs.textbox_centered (960., 1020.) 28. msg "consolas"
       Color.black
   in
-  Regl_common.group [] (scene_renderables @ [ audio_status ])
+  Regl_common.group [] ((Regl_builtin_programs.clear (Color.white)) :: scene_renderables @ [ audio_status ])
 
 let audio (m : model) : Regl_audio.audio =
   match (m.sound, m.play_at) with

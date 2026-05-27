@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ml-regl: test_mouse_smoke</title>
+    <script src="/_build/default/test/test_mouse_smoke.bc.js"></script>
+    <script src="/ml-regl-js/build/regl.js"></script>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <canvas id="myCanvas"></canvas>
+    <script>
+      const canvas = document.getElementById("myCanvas");
+      canvas.width = 400;
+      canvas.height = 300;
+      MlREGL.init(canvas, MlApp, []);
+      MlApp.init();
+    </script>
+  </body>
+</html>

@@ -1,13 +1,13 @@
-(* Desktop-only smoke test for mouse event coordinates.
+(* Cross-backend smoke test for mouse event coordinates.
 
-   Purpose: verify that desktop MouseDown / MouseUp / MouseMove events delivered
-   to OCaml are in StartRegl virtual coordinates, not SDL window pixels.
+   Purpose: verify that MouseDown / MouseUp / MouseMove events delivered to
+   OCaml are in StartRegl virtual coordinates, not raw host window/page pixels.
 
-   Manual check: - Run the executable, resize the window to any size, then
-   move/click inside it. - The on-screen coordinate readout and cursor marker
-   should stay in the virtual 400x300 canvas range regardless of window size /
-   high-DPI scaling. - A click in the visual centre should report roughly x=200,
-   y=150. - Mouse buttons should use SDL numbering: left=1, middle=2, right=3.
+   Manual check: - Run the executable/page, then move/click inside it. - The
+   on-screen coordinate readout and cursor marker should stay in the virtual
+   400x300 canvas range regardless of host presentation size / high-DPI scaling.
+   - A click in the visual centre should report roughly x=200, y=150. - Mouse
+   buttons should use SDL numbering: left=1, middle=2, right=3.
 
    The test also performs runtime assertions for any received mouse event: if a
    coordinate escapes the virtual canvas bounds (with tiny tolerance), it shows

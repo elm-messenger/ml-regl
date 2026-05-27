@@ -1,4 +1,4 @@
-(* End-to-end audio assertion harness for the desktop backend.
+(* Cross-backend end-to-end audio assertion harness.
 
    Loads two assets: - test/assets/test.ogg (OGG Vorbis, decoded via stb_vorbis)
    - test/assets/synth.wav (WAV, decoded via SDL3's builtin loader)
@@ -7,8 +7,7 @@
    the device rate, and registered as buffers. The [audio] description function
    builds a Regl_audio.audio tree from model state; the framework diffs it
    against the previous frame and ships [start_sound] / [stop_sound] /
-   [set_volume] / etc. through the bridge to libdeclgl, which runs the SDL3
-   mixer.
+   [set_volume] / etc. through the selected backend.
 
    The harness keeps a private [Regl_audio.prev_state] mirror in lockstep with
    the runtime, so we can introspect the exact action stream the diff engine
