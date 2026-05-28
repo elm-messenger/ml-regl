@@ -16,8 +16,8 @@
 open Ml_regl_core
 open Ml_regl_core.Regl_proto
 
-let virt_w = 400.0
-let virt_h = 300.0
+let virt_w = 1920.0
+let virt_h = 1200.0
 let quit_after_ms = 20_000.0
 let eps = 0.001
 let had_failure = ref false

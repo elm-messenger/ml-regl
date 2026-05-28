@@ -28,8 +28,8 @@ let phase_label = function
   | P3_FullscreenOff -> "phase 3: fullscreen=false via ConfigWindow"
   | P4_Quitting -> "phase 4: quit_regl shipped"
 
-let virt_w = 800.0
-let virt_h = 600.0
+let virt_w = 1280.0
+let virt_h = 720.0
 
 (* Frame markers between phase transitions. Wide enough that you can actually
    try to drag the edge / observe the fullscreen flip manually. At 60 fps these
