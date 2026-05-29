@@ -35,15 +35,20 @@ type regl_start_config = {
   fbo_num : int;
   builtin_programs : string list option;
   window : window_config;
+  (* App identifier forwarded to the backend in [StartRegl.app_name].
+     The desktop backend uses it to scope SDL_GetPrefPath for KV
+     storage (per-app on-disk state) and reports it in policy
+     diagnostics. Empty / [None] -> backend default ("declgl"). *)
+  app_name : string option;
 }
 
 type texture = { name : string; width : int; height : int }
 
 type regl_recv_msg =
   | REGLTextureLoaded of texture
-  | REGLTextureLoadFail of string
+  | REGLTextureLoadFail of { name : string; reason : string }
   | REGLFontLoaded of string
-  | REGLFontLoadFail of string
+  | REGLFontLoadFail of { name : string; reason : string }
   | REGLProgramCreated of string
   | REGLProgramCreateFail of string
   | REGLValueRead of { key : string; value : string }
@@ -120,9 +125,11 @@ let decode_backend_event_pb (payload : bytes) : regl_recv_msg option =
     match Backend_pb.BackendEvent.from_proto_exn reader with
     | `Texture_loaded { name; width; height } ->
         Some (REGLTextureLoaded { name; width; height })
-    | `Texture_loadfail name -> Some (REGLTextureLoadFail name)
+    | `Texture_loadfail { name; reason } ->
+        Some (REGLTextureLoadFail { name; reason })
     | `Font_loaded name -> Some (REGLFontLoaded name)
-    | `Font_loadfail name -> Some (REGLFontLoadFail name)
+    | `Font_loadfail { name; reason } ->
+        Some (REGLFontLoadFail { name; reason })
     | `Program_created name -> Some (REGLProgramCreated name)
     | `Program_createfail name -> Some (REGLProgramCreateFail name)
     | `Value_read { key; value } -> Some (REGLValueRead { key; value })
@@ -154,18 +161,20 @@ let start_regl cfg =
     | None, None -> None
     | _ -> Some (Backend_pb.WindowConfig.make ?fullscreen ?resizable ())
   in
+  let app_name = match cfg.app_name with Some s -> s | None -> "" in
   Backend_pb.BackendCommand.make
     ~kind:
       (match cfg.builtin_programs with
       | None ->
           `Start_regl
             (Backend_pb.StartRegl.make ~virt_width:cfg.virt_width
-               ~virt_height:cfg.virt_height ~fbo_num:cfg.fbo_num ?window ())
+               ~virt_height:cfg.virt_height ~fbo_num:cfg.fbo_num ~app_name
+               ?window ())
       | Some xs ->
           let bps = Common_pb.StringArray.make ~values:xs () in
           `Start_regl
             (Backend_pb.StartRegl.make ~virt_width:cfg.virt_width
-               ~virt_height:cfg.virt_height ~fbo_num:cfg.fbo_num
+               ~virt_height:cfg.virt_height ~fbo_num:cfg.fbo_num ~app_name
                ~builtin_programs:bps ?window ()))
     ()
 

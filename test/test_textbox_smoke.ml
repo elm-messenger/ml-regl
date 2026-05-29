@@ -30,6 +30,7 @@ let init () : model * regl_output list =
           fbo_num = 4;
           builtin_programs = None;
           window = default_window_config;
+          app_name = None;
         };
       config_regl (ConfigTimeInterval AnimationFrame);
       load_font font_name font_png font_json;
@@ -46,7 +47,7 @@ let update (m : model) (input : regl_input) :
         ({ m with ts; frame }, [])
     | REGLRecvMsg (REGLFontLoaded name) when name = font_name ->
         ({ m with font_loaded = true }, [])
-    | REGLRecvMsg (REGLFontLoadFail name) when name = font_name -> (m, [])
+    | REGLRecvMsg (REGLFontLoadFail { name; _ }) when name = font_name -> (m, [])
     | _ -> (m, [])
   in
   (m, Regl_audio.silence, cmds)

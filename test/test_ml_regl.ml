@@ -364,6 +364,7 @@ let init () =
       fbo_num = 5;
       builtin_programs = None;
       window = default_window_config;
+      app_name = None;
     }
   in
   let texture_opts =

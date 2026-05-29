@@ -14,15 +14,16 @@ let init () =
       fbo_num = 2;
       builtin_programs = None;
       window = default_window_config;
+      app_name = None;
     }
   in
   ( { texture_fail = false; font_fail = false; last_msg = "loading..." },
     [
       start_regl startconfig;
       config_regl (ConfigTimeInterval AnimationFrame);
-      load_texture missing_texture_name "/test/assets/DOES_NOT_EXIST.png" None;
-      load_font missing_font_name "/test/assets/DOES_NOT_EXIST.png"
-        "/test/assets/DOES_NOT_EXIST.json";
+      load_texture missing_texture_name "test/assets/DOES_NOT_EXIST.png" None;
+      load_font missing_font_name "test/assets/DOES_NOT_EXIST.png"
+        "test/assets/DOES_NOT_EXIST.json";
       load_font "consolas" "test/assets/Consolas.png"
         "test/assets/Consolas.json";
     ] )
@@ -31,11 +32,11 @@ let update (m : model) (e : regl_input) =
   match e with
   | REGLRecvMsg msg -> (
       match msg with
-      | REGLTextureLoadFail name when name = missing_texture_name ->
+      | REGLTextureLoadFail { name; _ } when name = missing_texture_name ->
           ( { m with texture_fail = true; last_msg = "texture load failed" },
             Regl_audio.silence,
             [] )
-      | REGLFontLoadFail name when name = missing_font_name ->
+      | REGLFontLoadFail { name; _ } when name = missing_font_name ->
           ( { m with font_fail = true; last_msg = "font load failed" },
             Regl_audio.silence,
             [] )

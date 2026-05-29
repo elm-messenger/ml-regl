@@ -75,6 +75,7 @@ let init () : model * regl_output list =
           fbo_num = 5;
           builtin_programs = None;
           window = default_window_config;
+          app_name = None;
         };
       config_regl (ConfigTimeInterval AnimationFrame);
       load_audio ogg_url;

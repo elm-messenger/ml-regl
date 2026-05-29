@@ -102,6 +102,7 @@ let init () =
       fbo_num = 6;
       builtin_programs = None;
       window = default_window_config;
+      app_name = None;
     }
   in
   let m =

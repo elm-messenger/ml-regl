@@ -54,6 +54,7 @@ let init () : model * regl_output list =
              frame. fullscreen left at None = use the platform default
              (windowed). *)
           window = { fullscreen = None; resizable = Some false };
+          app_name = None;
         };
       config_regl (ConfigTimeInterval AnimationFrame);
       load_font "consolas" "test/assets/Consolas.png"

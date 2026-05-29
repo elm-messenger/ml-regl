@@ -93,6 +93,7 @@ let init () : model * regl_output list =
           fbo_num = 2;
           builtin_programs = None;
           window = { fullscreen = None; resizable = Some true };
+          app_name = None;
         };
       config_regl (ConfigTimeInterval AnimationFrame);
       load_font "consolas" "test/assets/Consolas.png"

@@ -39,15 +39,16 @@ type regl_start_config = {
   fbo_num : int;
   builtin_programs : string list option;
   window : window_config;
+  app_name : string option;
 }
 
 type texture = { name : string; width : int; height : int }
 
 type regl_recv_msg =
   | REGLTextureLoaded of texture
-  | REGLTextureLoadFail of string
+  | REGLTextureLoadFail of { name : string; reason : string }
   | REGLFontLoaded of string
-  | REGLFontLoadFail of string
+  | REGLFontLoadFail of { name : string; reason : string }
   | REGLProgramCreated of string
   | REGLProgramCreateFail of string
   | REGLValueRead of { key : string; value : string }
