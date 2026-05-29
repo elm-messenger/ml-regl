@@ -12,7 +12,7 @@ type model = {
 type scene = TrianglesOnly | SpritesOnly
 
 let texture_name = "enemy"
-let texture_url = "test/assets/enemy.png"
+let texture_url = "assets/enemy.png"
 
 let take n xs =
   let rec aux n acc = function
@@ -114,8 +114,7 @@ let init () =
       start_regl startconfig;
       config_regl (ConfigTimeInterval (Millisecond 0.01));
       load_texture texture_name texture_url None;
-      load_font "consolas" "test/assets/Consolas.png"
-        "test/assets/Consolas.json";
+      load_font "consolas" "assets/Consolas.png" "assets/Consolas.json";
     ] )
 
 let update (m : model) (e : regl_input) =

@@ -54,8 +54,8 @@ type model = {
 
 let virt_w = 800.0
 let virt_h = 200.0
-let ogg_url = "test/assets/test.ogg"
-let wav_url = "test/assets/synth.wav"
+let ogg_url = "assets/test.ogg"
+let wav_url = "assets/synth.wav"
 
 (* {1 Action trace mirror} *)
 
@@ -80,8 +80,7 @@ let init () : model * regl_output list =
       config_regl (ConfigTimeInterval AnimationFrame);
       load_audio ogg_url;
       load_audio wav_url;
-      load_font "consolas" "test/assets/Consolas.png"
-        "test/assets/Consolas.json";
+      load_font "consolas" "assets/Consolas.png" "assets/Consolas.json";
     ]
   in
   ( {

@@ -22,8 +22,8 @@ let quit_after_ms = 1_000.0
 let storage_key = "ml-regl-storage-smoke-key"
 let storage_value = "stored value from test_storage_file_smoke"
 let missing_key = "ml-regl-storage-smoke-missing-key-never-written"
-let existing_file = "test/assets/Consolas.json"
-let missing_file = "test/assets/does-not-exist-storage-smoke.txt"
+let existing_file = "assets/Consolas.json"
+let missing_file = "assets/does-not-exist-storage-smoke.txt"
 let had_failure = ref false
 
 type model = {
@@ -70,8 +70,7 @@ let init () : model * regl_output list =
           app_name = None;
         };
       config_regl (ConfigTimeInterval AnimationFrame);
-      load_font "consolas" "test/assets/Consolas.png"
-        "test/assets/Consolas.json";
+      load_font "consolas" "assets/Consolas.png" "assets/Consolas.json";
       save_value storage_key storage_value;
       read_value storage_key;
       read_value missing_key;

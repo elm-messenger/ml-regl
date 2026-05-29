@@ -17,8 +17,8 @@ type model = { ts : float; frame : int; font_loaded : bool }
 let virt_w = 1280.0
 let virt_h = 720.0
 let font_name = "consolas"
-let font_png = "test/assets/Consolas.png"
-let font_json = "test/assets/Consolas.json"
+let font_png = "assets/Consolas.png"
+let font_json = "assets/Consolas.json"
 
 let init () : model * regl_output list =
   let cmds =

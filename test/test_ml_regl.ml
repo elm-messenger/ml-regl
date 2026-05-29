@@ -37,8 +37,8 @@ let initial_model =
 
 let texture_name = "enemy"
 let cropped_texture_name = "enemy-crop"
-let texture_url = "test/assets/enemy.png"
-let audio_url = "test/assets/test.ogg"
+let texture_url = "assets/enemy.png"
+let audio_url = "assets/test.ogg"
 let custom_program_name = "customFlat"
 
 let custom_program =
@@ -349,7 +349,9 @@ let view (m : model) =
     Regl_builtin_programs.textbox_centered (960., 1020.) 28. msg "consolas"
       Color.black
   in
-  Regl_common.group [] ((Regl_builtin_programs.clear (Color.white)) :: scene_renderables @ [ audio_status ])
+  Regl_common.group []
+    ((Regl_builtin_programs.clear Color.white :: scene_renderables)
+    @ [ audio_status ])
 
 let audio (m : model) : Regl_audio.audio =
   match (m.sound, m.play_at) with
@@ -382,8 +384,7 @@ let init () =
       load_texture texture_name texture_url None;
       load_texture cropped_texture_name texture_url texture_opts;
       load_audio audio_url;
-      load_font "consolas" "test/assets/Consolas.png"
-        "test/assets/Consolas.json";
+      load_font "consolas" "assets/Consolas.png" "assets/Consolas.json";
       create_regl_program custom_program_name custom_program;
     ] )
 

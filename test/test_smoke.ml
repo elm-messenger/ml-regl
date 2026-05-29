@@ -35,13 +35,12 @@ let init () : model * regl_output list =
       (* M3.D Round 1: ship a LoadTexture and observe the round-trip
          BackendEvent in [update] below. URL is filesystem-relative to the
          working directory the binary is launched from. *)
-      load_texture "enemy" "test/assets/enemy.png" None;
+      load_texture "enemy" "assets/enemy.png" None;
       (* M3.F: ship a LoadFont. The selected backend decodes the JSON metrics
          and atlas PNG, registers a Font/Texture pair, and ships back a
          [REGLFontLoaded] event. The textbox draw branch silently no-ops until
          the font load completes. *)
-      load_font "consolas" "test/assets/Consolas.png"
-        "test/assets/Consolas.json";
+      load_font "consolas" "assets/Consolas.png" "assets/Consolas.json";
     ]
   in
   ( {
@@ -72,13 +71,13 @@ let update (m : model) (input : regl_input) :
            handle. The sprite reappears. *)
         if frame' = 60 && not m.late_load_shipped then
           ( { m with ts; frame = frame'; late_load_shipped = true },
-            [ load_texture "enemy_late" "test/assets/enemy.png" None ] )
+            [ load_texture "enemy_late" "assets/enemy.png" None ] )
         else if frame' = 180 && not m.late_unload_shipped then
           ( { m with ts; frame = frame'; late_unload_shipped = true },
             [ unload_texture "enemy_late" ] )
         else if frame' = 240 && not m.late_reload_shipped then
           ( { m with ts; frame = frame'; late_reload_shipped = true },
-            [ load_texture "enemy_late" "test/assets/enemy.png" None ] )
+            [ load_texture "enemy_late" "assets/enemy.png" None ] )
         else ({ m with ts; frame = frame' }, [])
     | Regl_proto.Event (Regl_proto.MouseDown { button = _; x = _; y = _ }) ->
         ({ m with events = m.events + 1 }, [])

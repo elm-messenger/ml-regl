@@ -96,8 +96,7 @@ let init () : model * regl_output list =
           app_name = None;
         };
       config_regl (ConfigTimeInterval AnimationFrame);
-      load_font "consolas" "test/assets/Consolas.png"
-        "test/assets/Consolas.json";
+      load_font "consolas" "assets/Consolas.png" "assets/Consolas.json";
     ]
   in
   ( {

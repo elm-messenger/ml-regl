@@ -35,10 +35,10 @@ type regl_start_config = {
   fbo_num : int;
   builtin_programs : string list option;
   window : window_config;
-  (* App identifier forwarded to the backend in [StartRegl.app_name].
-     The desktop backend uses it to scope SDL_GetPrefPath for KV
-     storage (per-app on-disk state) and reports it in policy
-     diagnostics. Empty / [None] -> backend default ("declgl"). *)
+  (* App identifier forwarded to the backend in [StartRegl.app_name]. The
+     desktop backend uses it to scope SDL_GetPrefPath for KV storage (per-app
+     on-disk state) and reports it in policy diagnostics. Empty / [None] ->
+     backend default ("declgl"). *)
   app_name : string option;
 }
 
