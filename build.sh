@@ -22,6 +22,9 @@ if [[ ! -f "$declgl_build_dir/libdeclgl.a" ]]; then
     exit 1
 fi
 
+echo "==> Refreshing declgl-desktop dependency"
+cmake --build "$declgl_build_dir"
+
 missing_deps=()
 for package in "${opam_deps[@]}"; do
     if ! opam list --installed --short "$package" 2>/dev/null | grep -Fxq "$package"; then
