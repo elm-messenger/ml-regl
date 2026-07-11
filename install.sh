@@ -17,4 +17,4 @@ for package in "${packages[@]}"; do
 done
 
 echo "==> Installing pinned packages: ${packages[*]}"
-opam install -y "${packages[@]}"
+opam reinstall -y "${packages[@]}"
