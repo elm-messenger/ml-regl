@@ -12,6 +12,7 @@ let default_window_config = { fullscreen = None; resizable = None }
 type regl_config =
   | ConfigTimeInterval of time_interval
   | ConfigWindow of window_config
+  | ConfigMaxAssetsPerFrame of int
 
 type texture_mag_option = MagNearest | MagLinear
 
@@ -193,6 +194,8 @@ let config_regl cfg =
         `Interval_ms ms
     | ConfigWindow { fullscreen; resizable } ->
         `Window (Backend_pb.WindowConfig.make ?fullscreen ?resizable ())
+    | ConfigMaxAssetsPerFrame max_items ->
+        `Max_assets_per_frame (max 0 max_items)
   in
   Backend_pb.BackendCommand.make
     ~kind:(`Config_regl (Backend_pb.ReglConfig.make ~config ()))

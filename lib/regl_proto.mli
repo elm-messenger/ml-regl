@@ -16,6 +16,7 @@ val default_window_config : window_config
 type regl_config =
   | ConfigTimeInterval of time_interval
   | ConfigWindow of window_config
+  | ConfigMaxAssetsPerFrame of int
 
 type texture_mag_option = MagNearest | MagLinear
 
