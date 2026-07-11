@@ -37,4 +37,4 @@ fi
 echo "==> Building ml-regl packages"
 cd "$repo_root"
 eval "$(opam env)"
-DECLGL_BUILD_DIR="$declgl_build_dir" dune build --profile release --for-release-of-packages "$(IFS=,; echo "${packages[*]}")" @install
+DECLGL_BUILD_DIR="$declgl_build_dir" dune build --profile release
