@@ -15,6 +15,7 @@ type regl_config =
   | ConfigMaxAssetsPerFrame of int
 
 type texture_mag_option = MagNearest | MagLinear
+type shader_language = Glsl | GlslEs100
 
 type texture_min_option =
   | MinNearest
@@ -108,9 +109,15 @@ let backend_texture_options = function
       in
       Some (Backend_pb.TextureOptions.make ~mag ~min ?crop ())
 
-let backend_create_program name program =
+let backend_shader_language = function
+  | Glsl -> Backend_pb.ShaderLanguage.SHADER_LANGUAGE_GLSL
+  | GlslEs100 -> Backend_pb.ShaderLanguage.SHADER_LANGUAGE_GLSL_ES_100
+
+let backend_create_program ?(shader_language = Glsl) name program =
   Backend_pb.CreateProgram.make ~name
-    ~program:(Regl_program.encode_program_pb program)
+    ~program:
+      (let encoded = Regl_program.encode_program_pb program in
+       { encoded with shader_language = backend_shader_language shader_language })
     ()
 
 let encode_backend_command_batch_pb
@@ -179,9 +186,11 @@ let start_regl cfg =
                ~builtin_programs:bps ?window ()))
     ()
 
-let create_regl_program name program =
+let create_regl_program ?(shader_language = Glsl) name program =
   Backend_pb.BackendCommand.make
-    ~kind:(`Create_program (backend_create_program name program))
+    ~kind:
+      (`Create_program
+        (backend_create_program ~shader_language name program))
     ()
 
 let config_regl cfg =
