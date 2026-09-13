@@ -10,6 +10,15 @@ open Ml_regl_core.Regl_proto
    The call returns when the user closes the window. *)
 external declgl_ship_backend_cmd : bytes -> unit = "declgl_ship_backend_cmd"
 external declgl_ship_audio_cmd : bytes -> unit = "declgl_ship_audio_cmd"
+external declgl_debug_emit : string -> unit = "declgl_debug_emit"
+
+let env_flag name =
+  match Sys.getenv_opt name with
+  | Some value -> (
+      match String.lowercase_ascii (String.trim value) with
+      | "1" | "true" | "yes" | "on" -> true
+      | _ -> false)
+  | None -> false
 
 let execCmdPb commands =
   declgl_ship_backend_cmd (encode_backend_command_batch_pb commands)
@@ -29,6 +38,11 @@ module DesktopRuntime = Regl_runtime.Make (DesktopHost)
 let create_app (init : unit -> 'a * regl_output list)
     (update : 'a -> regl_input -> 'a * Regl_audio.audio * regl_output list)
     (view : 'a -> Regl_common.renderable) =
+  (* Debug output is opt-in. The native bridge mirrors the line to stdout and
+     forwards it to the development control connection when available. *)
+  Regl_debug.configure
+    ~enabled:(env_flag "DECLGL_DEBUG")
+    ~sink:(fun event -> declgl_debug_emit (Regl_debug.event_to_line event));
   let h = DesktopRuntime.create_app ~init ~update ~view in
 
   (* C++ side resolves these by name with caml_named_value. The names mirror the

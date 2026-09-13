@@ -86,6 +86,45 @@ DECLGL_BUILD_DIR=$PWD/build/mac-debug dune build  # from repo root
 
 See `declgl-desktop/Readme.md` for full toolchain setup (vcpkg, SDL3, etc.).
 
+## Development diagnostics
+
+The portable core exposes `Regl_debug.log` and `Regl_debug.publish_state` for
+development-only diagnostics. A host supplies the sink, so application code
+does not depend on stdout, browser APIs, or MCP transport details:
+
+```ocaml
+Regl_debug.log "entered forest_intro";
+Regl_debug.publish_state
+  {|{"scene":"forest_intro","objective":"find_key"}|};
+```
+
+Desktop diagnostics are enabled with `DECLGL_DEBUG=1` and are emitted as
+flushed `MCP_LOG ...` / `MCP_STATE ...` lines. Set
+`DECLGL_CONTROL_URL=ws://127.0.0.1:PORT` as well to connect the optional JSON
+control channel. Browser diagnostics are enabled with `?debug=1`, `?mcp=1`, or
+an `#mcp=...` URL fragment. A WebSocket URL can be supplied as
+`?control=ws://...` or `#mcp=ws://...`.
+
+The control connection is outbound from the game host, so the MCP process
+owns the localhost listener. Both hosts use the same JSON envelopes:
+
+```json
+{"type":"hello","protocol":1,"runtime":"ml-regl-desktop"}
+{"method":"pause","id":1}
+{"type":"response","id":1,"ok":true,"result":{"paused":true}}
+```
+
+Supported commands are `pause`, `resume`, `step` (optional `frames` and
+`dt_ms`), `set_time`, `get_state`, `get_render_tree`, `screenshot`, and
+`input` (`key_down`, `key_up`, `mouse_down`, `mouse_up`, or
+`mouse_move`). Commands are applied at frame boundaries on the render thread.
+State/log/frame events use `type: "state"`, `"log"`, and `"frame"`; protobuf
+remains the internal renderer and game-event protocol. Without the relevant
+debug/control flag, diagnostics and remote control are disabled.
+The standalone contract is documented in [`docs/ControlProtocol.md`](docs/ControlProtocol.md).
+The native integration smoke test uses the existing `test_fps_smoke` program:
+`python3 test/native_control_smoke.py`.
+
 ## Repository layout
 
 | Path                | Contents                                       |

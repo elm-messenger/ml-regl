@@ -17,6 +17,15 @@
 ; set, dune will refuse to build the desktop variants but still build
 ; the js variants cleanly.
 
+; --- test_regl_debug: portable diagnostics API -----------------------
+
+(test
+ (name test_regl_debug)
+ (modules test_regl_debug)
+ (libraries ml_regl_core)
+ (flags
+  (:standard -warn-error -A)))
+
 ; --- test_ml_regl: full-coverage demo of the public API ----------------
 
 (executable

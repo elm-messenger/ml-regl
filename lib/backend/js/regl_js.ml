@@ -42,6 +42,39 @@ end
 
 module JsRuntime = Regl_runtime.Make (JsHost)
 
+let js_debug_enabled () =
+  let mlregl = Js.Unsafe.global##.MlREGL in
+  try
+    Js.to_bool
+      (Js.Unsafe.fun_call (Js.Unsafe.get mlregl "debugEnabled") [||])
+  with _ -> false
+
+let js_debug_sink (event : Regl_debug.event) =
+  let mlregl = Js.Unsafe.global##.MlREGL in
+  let kind = match event.kind with Log -> "log" | State -> "state" in
+  let level =
+    match event.level with
+    | Debug -> "debug"
+    | Info -> "info"
+    | Warning -> "warning"
+    | Error -> "error"
+  in
+  let payload = Js.string event.payload in
+  let value =
+    Js.Unsafe.obj
+      [|
+        ("kind", Js.Unsafe.inject (Js.string kind));
+        ("level", Js.Unsafe.inject (Js.string level));
+        ("payload", Js.Unsafe.inject payload);
+      |]
+  in
+  try
+    Js.Unsafe.fun_call (Js.Unsafe.get mlregl "emitDebug") [| value |]
+  with _ -> ()
+
+let configure_debug () =
+  Regl_debug.configure ~enabled:(js_debug_enabled ()) ~sink:js_debug_sink
+
 let create_app (init : unit -> 'a * regl_output list)
     (update : 'a -> regl_input -> 'a * Regl_audio.audio * regl_output list)
     (view : 'a -> Regl_common.renderable) =
@@ -49,7 +82,7 @@ let create_app (init : unit -> 'a * regl_output list)
   Js.export "MlApp"
     (Js.Unsafe.obj
        [|
-         ("init", Js.Unsafe.inject (fun _ -> h.init ()));
+         ("init", Js.Unsafe.inject (fun _ -> configure_debug (); h.init ()));
          ( "event",
            Js.Unsafe.inject (fun ev ->
                h.event (bytes_of_uint8array (Js.Unsafe.coerce ev))) );

@@ -1,2 +1,5 @@
 _build
 .DS_Storeß
+mcp_frame_*.bmp
+frames/
+/test/__pycache__
