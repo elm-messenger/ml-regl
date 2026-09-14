@@ -117,7 +117,10 @@ let backend_create_program ?(shader_language = Glsl) name program =
   Backend_pb.CreateProgram.make ~name
     ~program:
       (let encoded = Regl_program.encode_program_pb program in
-       { encoded with shader_language = backend_shader_language shader_language })
+       {
+         encoded with
+         shader_language = backend_shader_language shader_language;
+       })
     ()
 
 let encode_backend_command_batch_pb
@@ -189,8 +192,7 @@ let start_regl cfg =
 let create_regl_program ?(shader_language = Glsl) name program =
   Backend_pb.BackendCommand.make
     ~kind:
-      (`Create_program
-        (backend_create_program ~shader_language name program))
+      (`Create_program (backend_create_program ~shader_language name program))
     ()
 
 let config_regl cfg =

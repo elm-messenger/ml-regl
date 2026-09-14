@@ -40,9 +40,8 @@ let create_app (init : unit -> 'a * regl_output list)
     (view : 'a -> Regl_common.renderable) =
   (* Debug output is opt-in. The native bridge mirrors the line to stdout and
      forwards it to the development control connection when available. *)
-  Regl_debug.configure
-    ~enabled:(env_flag "DECLGL_DEBUG")
-    ~sink:(fun event -> declgl_debug_emit (Regl_debug.event_to_line event));
+  Regl_debug.configure ~enabled:(env_flag "DECLGL_DEBUG") ~sink:(fun event ->
+      declgl_debug_emit (Regl_debug.event_to_line event));
   let h = DesktopRuntime.create_app ~init ~update ~view in
 
   (* C++ side resolves these by name with caml_named_value. The names mirror the

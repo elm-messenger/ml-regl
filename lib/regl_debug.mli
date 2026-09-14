@@ -6,15 +6,8 @@
     the browser console, and the eventual MCP WebSocket transport. *)
 
 type level = Debug | Info | Warning | Error
-
 type kind = Log | State
-
-type event = {
-  kind : kind;
-  level : level;
-  payload : string;
-}
-
+type event = { kind : kind; level : level; payload : string }
 type sink = event -> unit
 
 val configure : enabled:bool -> sink:sink -> unit
@@ -29,14 +22,14 @@ val event_to_line : event -> string
 val set_enabled : bool -> unit
 val set_sink : sink -> unit
 val enabled : unit -> bool
+
 val reset : unit -> unit
 (** Restore the disabled default stdout sink. Primarily useful for tests. *)
 
 val log : ?level:level -> string -> unit
 (** Emit a human-readable diagnostic message. *)
 
-val logf :
-  ?level:level -> ('a, unit, string, unit) format4 -> 'a
+val logf : ?level:level -> ('a, unit, string, unit) format4 -> 'a
 
 val publish_state : string -> unit
 (** Emit a one-line JSON state payload. The function does not parse or validate

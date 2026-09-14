@@ -11,7 +11,8 @@ let () =
   expect (not (Regl_debug.enabled ())) "debug should start disabled";
 
   let events = ref [] in
-  Regl_debug.configure ~enabled:true ~sink:(fun event -> events := event :: !events);
+  Regl_debug.configure ~enabled:true ~sink:(fun event ->
+      events := event :: !events);
   Regl_debug.log "started";
   Regl_debug.log ~level:Regl_debug.Warning "slow frame";
   Regl_debug.publish_state {|{"scene":"intro","frame":12}|};
@@ -27,13 +28,13 @@ let () =
   expect (second.level = Regl_debug.Warning) "explicit level mismatch";
   let third = List.nth received 2 in
   expect (third.kind = Regl_debug.State) "state kind mismatch";
-  expect (third.payload = {|{"scene":"intro","frame":12}|})
+  expect
+    (third.payload = {|{"scene":"intro","frame":12}|})
     "state payload mismatch";
   let fourth = List.nth received 3 in
   expect (fourth.payload = {|{"score":7}|}) "formatted state mismatch";
   expect
-    (Regl_debug.event_to_line fourth =
-       {|MCP_STATE {"score":7}
+    (Regl_debug.event_to_line fourth = {|MCP_STATE {"score":7}
 |})
     "state line format mismatch";
 

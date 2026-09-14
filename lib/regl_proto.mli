@@ -81,7 +81,9 @@ val backend_texture_options :
 
 val backend_create_program :
   ?shader_language:shader_language ->
-  string -> Regl_program.regl_program -> Backend_pb.CreateProgram.t
+  string ->
+  Regl_program.regl_program ->
+  Backend_pb.CreateProgram.t
 
 val encode_backend_command_batch_pb : Backend_pb.BackendCommand.t list -> bytes
 (** Encode a list of [BackendCommand.t] into protobuf bytes (a
@@ -95,9 +97,13 @@ val decode_backend_event_pb : bytes -> regl_recv_msg option
 val load_texture : string -> string -> texture_options option -> regl_output
 val load_font : string -> string -> string -> regl_output
 val start_regl : regl_start_config -> regl_output
+
 val create_regl_program :
   ?shader_language:shader_language ->
-  string -> Regl_program.regl_program -> regl_output
+  string ->
+  Regl_program.regl_program ->
+  regl_output
+
 val config_regl : regl_config -> regl_output
 val load_audio : string -> regl_output
 

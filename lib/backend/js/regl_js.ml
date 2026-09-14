@@ -44,9 +44,7 @@ module JsRuntime = Regl_runtime.Make (JsHost)
 
 let js_debug_enabled () =
   let mlregl = Js.Unsafe.global##.MlREGL in
-  try
-    Js.to_bool
-      (Js.Unsafe.fun_call (Js.Unsafe.get mlregl "debugEnabled") [||])
+  try Js.to_bool (Js.Unsafe.fun_call (Js.Unsafe.get mlregl "debugEnabled") [||])
   with _ -> false
 
 let js_debug_sink (event : Regl_debug.event) =
@@ -68,8 +66,7 @@ let js_debug_sink (event : Regl_debug.event) =
         ("payload", Js.Unsafe.inject payload);
       |]
   in
-  try
-    Js.Unsafe.fun_call (Js.Unsafe.get mlregl "emitDebug") [| value |]
+  try Js.Unsafe.fun_call (Js.Unsafe.get mlregl "emitDebug") [| value |]
   with _ -> ()
 
 let configure_debug () =
@@ -82,7 +79,10 @@ let create_app (init : unit -> 'a * regl_output list)
   Js.export "MlApp"
     (Js.Unsafe.obj
        [|
-         ("init", Js.Unsafe.inject (fun _ -> configure_debug (); h.init ()));
+         ( "init",
+           Js.Unsafe.inject (fun _ ->
+               configure_debug ();
+               h.init ()) );
          ( "event",
            Js.Unsafe.inject (fun ev ->
                h.event (bytes_of_uint8array (Js.Unsafe.coerce ev))) );
