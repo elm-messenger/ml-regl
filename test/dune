@@ -35,6 +35,15 @@
  (flags
   (:standard -warn-error -A)))
 
+; --- test_window_config: window config encoding --------------------
+
+(test
+ (name test_window_config)
+ (modules test_window_config)
+ (libraries ml_regl_core ocaml-protoc-plugin)
+ (flags
+  (:standard -warn-error -A)))
+
 ; --- test_audio_ends: when an audio description finishes -------------
 
 (test

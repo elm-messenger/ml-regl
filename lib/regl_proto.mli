@@ -5,7 +5,15 @@
     (including storage read replies), backend replies, and audio messages. *)
 
 type time_interval = AnimationFrame | Millisecond of float
-type window_config = { fullscreen : bool option; resizable : bool option }
+
+type window_config = {
+  fullscreen : bool option;
+  resizable : bool option;
+  title : string option;
+      (** Window title. The desktop host titles its native window ("declgl" when
+          unset at start); the browser host sets [document.title]. *)
+}
+(** Window flags. [None] leaves the current value untouched. *)
 
 val default_window_config : window_config
 
@@ -124,7 +132,7 @@ val load_audio : string -> regl_output
 
     - [unload_texture]: by [name] (matches [load_texture]'s [name]).
     - [unload_font]: by [name] (matches [load_font]'s [name]). The atlas texture
-      is freed too.
+      is freed too, unless another loaded font still uses the same image.
     - [unload_audio]: by [audio_url] (matches [load_audio]'s sole arg). *)
 
 val unload_texture : string -> regl_output

@@ -5,9 +5,15 @@
    (window callbacks, MlApp export, DOM event handling) lives in [regl.ml]. *)
 
 type time_interval = AnimationFrame | Millisecond of float
-type window_config = { fullscreen : bool option; resizable : bool option }
 
-let default_window_config = { fullscreen = None; resizable = None }
+type window_config = {
+  fullscreen : bool option;
+  resizable : bool option;
+  title : string option;
+}
+
+let default_window_config =
+  { fullscreen = None; resizable = None; title = None }
 
 type regl_config =
   | ConfigTimeInterval of time_interval
@@ -177,11 +183,11 @@ let load_font name image_url json_url =
     ()
 
 let start_regl cfg =
-  let { fullscreen; resizable } = cfg.window in
+  let { fullscreen; resizable; title } = cfg.window in
   let window =
-    match (fullscreen, resizable) with
-    | None, None -> None
-    | _ -> Some (Backend_pb.WindowConfig.make ?fullscreen ?resizable ())
+    match (fullscreen, resizable, title) with
+    | None, None, None -> None
+    | _ -> Some (Backend_pb.WindowConfig.make ?fullscreen ?resizable ?title ())
   in
   let app_name = match cfg.app_name with Some s -> s | None -> "" in
   Backend_pb.BackendCommand.make
@@ -214,8 +220,8 @@ let config_regl cfg =
           match ti with AnimationFrame -> -1.0 | Millisecond ms -> ms
         in
         `Interval_ms ms
-    | ConfigWindow { fullscreen; resizable } ->
-        `Window (Backend_pb.WindowConfig.make ?fullscreen ?resizable ())
+    | ConfigWindow { fullscreen; resizable; title } ->
+        `Window (Backend_pb.WindowConfig.make ?fullscreen ?resizable ?title ())
     | ConfigMaxAssetsPerFrame max_items ->
         `Max_assets_per_frame (max 0 max_items)
   in

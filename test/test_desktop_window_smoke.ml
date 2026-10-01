@@ -4,12 +4,13 @@
    window flags. We bring the window up explicitly NON-resizable so the very
    first frame already reflects the [WindowConfig] in StartRegl. - [ConfigRegl]
    / [ConfigWindow]: runtime overrides. We then flip resizable back on, toggle
-   fullscreen on, toggle it off, and finally quit.
+   fullscreen on, toggle it off, and finally quit. Every phase also sets the
+   window title to the phase label.
 
    This test is visual: drag the window edge during each phase to confirm the
    resizable flag, and look at the screen during the fullscreen phase to confirm
-   it covers the display. The on-screen text reports which phase is active so
-   it's obvious at a glance. *)
+   it covers the display. The on-screen text and the window title report which
+   phase is active so it's obvious at a glance. *)
 
 open Ml_regl_core
 open Ml_regl_core.Regl_proto
@@ -53,7 +54,12 @@ let init () : model * regl_output list =
           (* StartRegl.window: open the window non-resizable from the very first
              frame. fullscreen left at None = use the platform default
              (windowed). *)
-          window = { fullscreen = None; resizable = Some false };
+          window =
+            {
+              fullscreen = None;
+              resizable = Some false;
+              title = Some (phase_label P0_NonResizable);
+            };
           app_name = None;
         };
       config_regl (ConfigTimeInterval AnimationFrame);
@@ -70,21 +76,36 @@ let advance_phase (m : model) : model * regl_output list =
           P1_ResizableOn,
           [
             config_regl
-              (ConfigWindow { fullscreen = None; resizable = Some true });
+              (ConfigWindow
+                 {
+                   fullscreen = None;
+                   resizable = Some true;
+                   title = Some (phase_label P1_ResizableOn);
+                 });
           ] )
     | P1_ResizableOn ->
         ( frame_p2,
           P2_FullscreenOn,
           [
             config_regl
-              (ConfigWindow { fullscreen = Some true; resizable = None });
+              (ConfigWindow
+                 {
+                   fullscreen = Some true;
+                   resizable = None;
+                   title = Some (phase_label P2_FullscreenOn);
+                 });
           ] )
     | P2_FullscreenOn ->
         ( frame_p3,
           P3_FullscreenOff,
           [
             config_regl
-              (ConfigWindow { fullscreen = Some false; resizable = None });
+              (ConfigWindow
+                 {
+                   fullscreen = Some false;
+                   resizable = None;
+                   title = Some (phase_label P3_FullscreenOff);
+                 });
           ] )
     | P3_FullscreenOff -> (frame_quit, P4_Quitting, [ quit_regl () ])
     | P4_Quitting -> (max_int, P4_Quitting, [])
