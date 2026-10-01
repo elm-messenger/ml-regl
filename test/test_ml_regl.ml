@@ -385,7 +385,8 @@ let init () =
       load_texture cropped_texture_name texture_url texture_opts;
       load_audio audio_url;
       load_font "consolas" "assets/Consolas.png" "assets/Consolas.json";
-      create_regl_program custom_program_name custom_program;
+      create_regl_program ~shader_language:GlslEs100 custom_program_name
+        custom_program;
     ] )
 
 let update (m : model) (e : regl_input) =
