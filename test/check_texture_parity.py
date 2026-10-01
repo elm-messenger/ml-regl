@@ -6,7 +6,8 @@ test/assets/orientation.png (4x4 cells, 16 colours). This script captures the
 desktop window (over the control protocol) and the browser page (headless
 Chrome), samples the centre of every drawn cell, and checks it against the
 cell the slot must show. It also compares the label text of both hosts, so a
-flipped font atlas fails too.
+flipped font atlas fails too, and checks that a compositor with one empty
+side treats it as a transparent image.
 
 Build first: ./build.sh (desktop executable and test bundles) and the
 ml-regl-js bundle (`make build` in ml-regl-js). Needs Python's `websockets`
@@ -67,7 +68,12 @@ PROBES = [
     ("built-in effect", WHOLE),
     ("custom compositor", WHOLE),
     ("built-in compositor", WHOLE),
+    ("compositor, empty 2nd", WHOLE),
+    ("compositor, empty 1st", WHOLE),  # shows only the background
+    ("fade, empty side", WHOLE),  # each cell half-way to the background
 ]
+BACKGROUND_ONLY = {"compositor, empty 1st"}
+HALF_FADED = {"fade, empty side"}
 TOLERANCE = 40
 
 
@@ -80,7 +86,12 @@ def samples():
                 row = r0 + (rows - 1 - j if reversed_rows else j)
                 x = sx + (i + 0.5) * 128 / cols
                 y = sy + (j + 0.5) * 128 / rows
-                yield label, x, y, COLORS[row * 4 + c0 + i]
+                color = COLORS[row * 4 + c0 + i]
+                if label in BACKGROUND_ONLY:
+                    color = BACKGROUND
+                elif label in HALF_FADED:
+                    color = tuple((a + b) // 2 for a, b in zip(color, BACKGROUND))
+                yield label, x, y, color
 
 
 class Canvas:

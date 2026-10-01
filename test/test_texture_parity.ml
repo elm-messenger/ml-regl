@@ -3,7 +3,8 @@
    option, each in its own 160x180 slot (8 per row, image at slot origin + (16,
    8), 128x128). The picture must be the same on both hosts, and each slot must
    show the cells listed in [probes]; test/check_texture_parity.py checks both.
-   Fonts are drawn too (the labels) and must stay upright.
+   Fonts are drawn too (the labels) and must stay upright. The last slots check
+   that a compositor treats an empty side as a transparent image.
 
    Browser: dune build test/test_texture_parity.bc.js, serve the repository
    root, open html/test_texture_parity.html. Desktop: dune build
@@ -228,6 +229,22 @@ let probes :
         Regl_compositors.linear_fade 0.5
           (P.rect_texture p size "full")
           (P.rect_texture p size "full") );
+    (* An empty side (no atomic in it) is a transparent image. *)
+    ( "compositor, empty 2nd",
+      [ "full"; "first" ],
+      fun p ->
+        Regl_common.composite "first" [] (P.rect_texture p size "full") P.empty
+    );
+    ( "compositor, empty 1st",
+      [ "full"; "first" ],
+      fun p ->
+        Regl_common.composite "first" [] P.empty (P.rect_texture p size "full")
+    );
+    ( "fade, empty side",
+      [ "full" ],
+      fun p ->
+        Regl_compositors.linear_fade 0.5 (P.rect_texture p size "full") P.empty
+    );
   ]
 
 let view m =
