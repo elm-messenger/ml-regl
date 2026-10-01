@@ -6,9 +6,10 @@
    stdout/stderr:
 
    - SaveValue is fire-and-forget. - ReadValue returns the value saved earlier
-   in the same startup batch. - ReadValue for a never-saved key returns
-   REGLValueReadMissing. - LoadFile returns text bytes for an existing file. -
-   LoadFile returns REGLFileLoadFailed for a missing file.
+   in the same startup batch, as a ValueRead event. - ReadValue for a
+   never-saved key returns ValueRead with no value. - LoadFile returns text
+   bytes for an existing file. - LoadFile returns REGLFileLoadFailed for a
+   missing file.
 
    The window exits automatically once all expectations are met, or exits
    non-zero after a timeout if any expectation fails or is missing. *)
@@ -98,14 +99,14 @@ let update (m : model) (input : regl_input) :
   let m =
     match input with
     | Event (UpdateTick ts) -> { m with ts; frame = m.frame + 1 }
-    | REGLRecvMsg (REGLValueRead { key; value }) when key = storage_key ->
+    | Event (ValueRead { key; value = Some value }) when key = storage_key ->
         if value = storage_value then { m with value_ok = true }
         else fail m (Printf.sprintf "bad value for %s" key)
-    | REGLRecvMsg (REGLValueRead { key; value = _ }) ->
+    | Event (ValueRead { key; value = Some _ }) ->
         fail m (Printf.sprintf "unexpected value_read for %s" key)
-    | REGLRecvMsg (REGLValueReadMissing key) when key = missing_key ->
+    | Event (ValueRead { key; value = None }) when key = missing_key ->
         { m with missing_value_ok = true }
-    | REGLRecvMsg (REGLValueReadMissing key) ->
+    | Event (ValueRead { key; value = None }) ->
         fail m (Printf.sprintf "unexpected value_read_missing for %s" key)
     | REGLRecvMsg (REGLFileLoaded { path; data }) when path = existing_file ->
         if validate_file_data data then { m with file_ok = true }

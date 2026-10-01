@@ -53,8 +53,6 @@ type regl_recv_msg =
   | REGLFontLoadFail of { name : string; reason : string }
   | REGLProgramCreated of string
   | REGLProgramCreateFail of string
-  | REGLValueRead of { key : string; value : string }
-  | REGLValueReadMissing of string
   | REGLFileLoaded of { path : string; data : string }
   | REGLFileLoadFailed of { path : string; reason : string }
 
@@ -63,9 +61,20 @@ type audio_recv_msg =
   | AudioLoadFailed of { audio_url : string; error : Regl_audio.load_error }
   | AudioContextReady of { sample_rate : int }
 
-(* The [regl_input] variant lives in each host facade (it carries the host's
-   native event type). The core only needs the message payload types declared
-   above. *)
+type regl_event =
+  | UpdateTick of float
+  | MouseDown of { button : int; x : float; y : float }
+  | MouseUp of { button : int; x : float; y : float }
+  | MouseMove of { x : float; y : float }
+  | KeyDown of string (* Key Code *)
+  | KeyUp of string (* Key Code *)
+  | ValueRead of { key : string; value : string option }
+      (** Reply to [read_value]: [None] when nothing is stored under [key]. *)
+
+type regl_input =
+  | Event of regl_event
+  | REGLRecvMsg of regl_recv_msg
+  | AudioMsg of audio_recv_msg
 
 module Backend_pb = Transport_backend.Mlregl.Transport.Backend
 module Common_pb = Transport_common.Mlregl.Transport.Common
@@ -128,26 +137,28 @@ let encode_backend_command_batch_pb
   Backend_pb.BackendCommandBatch.to_proto commands
   |> Ocaml_protoc_plugin.Writer.contents |> Bytes.unsafe_of_string
 
-let decode_backend_event_pb (payload : bytes) : regl_recv_msg option =
+let decode_backend_event_pb (payload : bytes) : regl_input option =
   try
     let reader =
       Ocaml_protoc_plugin.Reader.create (Bytes.unsafe_to_string payload)
     in
+    let recv msg = Some (REGLRecvMsg msg) in
     match Backend_pb.BackendEvent.from_proto_exn reader with
     | `Texture_loaded { name; width; height } ->
-        Some (REGLTextureLoaded { name; width; height })
+        recv (REGLTextureLoaded { name; width; height })
     | `Texture_loadfail { name; reason } ->
-        Some (REGLTextureLoadFail { name; reason })
-    | `Font_loaded name -> Some (REGLFontLoaded name)
+        recv (REGLTextureLoadFail { name; reason })
+    | `Font_loaded name -> recv (REGLFontLoaded name)
     | `Font_loadfail { name; reason } ->
-        Some (REGLFontLoadFail { name; reason })
-    | `Program_created name -> Some (REGLProgramCreated name)
-    | `Program_createfail name -> Some (REGLProgramCreateFail name)
-    | `Value_read { key; value } -> Some (REGLValueRead { key; value })
-    | `Value_read_missing key -> Some (REGLValueReadMissing key)
-    | `File_loaded { path; data } -> Some (REGLFileLoaded { path; data })
+        recv (REGLFontLoadFail { name; reason })
+    | `Program_created name -> recv (REGLProgramCreated name)
+    | `Program_createfail name -> recv (REGLProgramCreateFail name)
+    | `Value_read { key; value } ->
+        Some (Event (ValueRead { key; value = Some value }))
+    | `Value_read_missing key -> Some (Event (ValueRead { key; value = None }))
+    | `File_loaded { path; data } -> recv (REGLFileLoaded { path; data })
     | `File_load_failed { path; reason } ->
-        Some (REGLFileLoadFailed { path; reason })
+        recv (REGLFileLoadFailed { path; reason })
     | `not_set -> None
   with _ -> None
 
@@ -251,19 +262,6 @@ let load_file path =
   Backend_pb.BackendCommand.make
     ~kind:(`Load_file (Backend_pb.LoadFile.make ~path ()))
     ()
-
-type regl_event =
-  | UpdateTick of float
-  | MouseDown of { button : int; x : float; y : float }
-  | MouseUp of { button : int; x : float; y : float }
-  | MouseMove of { x : float; y : float }
-  | KeyDown of string (* Key Code *)
-  | KeyUp of string (* Key Code *)
-
-type regl_input =
-  | Event of regl_event
-  | REGLRecvMsg of regl_recv_msg
-  | AudioMsg of audio_recv_msg
 
 let decode_event_pb (payload : bytes) : regl_event option =
   let reader =

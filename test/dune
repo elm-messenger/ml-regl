@@ -26,6 +26,15 @@
  (flags
   (:standard -warn-error -A)))
 
+; --- test_proto_decode: backend event decoding ----------------------
+
+(test
+ (name test_proto_decode)
+ (modules test_proto_decode)
+ (libraries ml_regl_core ocaml-protoc-plugin)
+ (flags
+  (:standard -warn-error -A)))
+
 ; --- test_ml_regl: full-coverage demo of the public API ----------------
 
 (executable

@@ -1,8 +1,8 @@
 (** Portable core of ml_regl: protobuf encoding helpers and pure types shared by
     all backends (JS, native, ...). No [Js_of_ocaml] dependency.
 
-    The [regl_input] type is parameterized by the host's native event type so
-    this core can be reused in environments that have no DOM. *)
+    [regl_input] is everything a host delivers to the application: input events
+    (including storage read replies), backend replies, and audio messages. *)
 
 type time_interval = AnimationFrame | Millisecond of float
 type window_config = { fullscreen : bool option; resizable : bool option }
@@ -53,8 +53,6 @@ type regl_recv_msg =
   | REGLFontLoadFail of { name : string; reason : string }
   | REGLProgramCreated of string
   | REGLProgramCreateFail of string
-  | REGLValueRead of { key : string; value : string }
-  | REGLValueReadMissing of string
   | REGLFileLoaded of { path : string; data : string }
   | REGLFileLoadFailed of { path : string; reason : string }
 
@@ -63,10 +61,20 @@ type audio_recv_msg =
   | AudioLoadFailed of { audio_url : string; error : Regl_audio.load_error }
   | AudioContextReady of { sample_rate : int }
 
-(** Note: the [regl_input] variant (which carries the host's native event type)
-    lives in each host facade ([Regl] for the JS build, the native driver for
-    declgl-desktop). The core only needs the message payload types
-    ([regl_recv_msg], [audio_recv_msg]) above. *)
+type regl_event =
+  | UpdateTick of float
+  | MouseDown of { button : int; x : float; y : float }
+  | MouseUp of { button : int; x : float; y : float }
+  | MouseMove of { x : float; y : float }
+  | KeyDown of string (* Key Code *)
+  | KeyUp of string (* Key Code *)
+  | ValueRead of { key : string; value : string option }
+      (** Reply to [read_value]: [None] when nothing is stored under [key]. *)
+
+type regl_input =
+  | Event of regl_event
+  | REGLRecvMsg of regl_recv_msg
+  | AudioMsg of audio_recv_msg
 
 module Backend_pb : module type of Transport_backend.Mlregl.Transport.Backend
 module Common_pb : module type of Transport_common.Mlregl.Transport.Common
@@ -89,8 +97,9 @@ val encode_backend_command_batch_pb : Backend_pb.BackendCommand.t list -> bytes
 (** Encode a list of [BackendCommand.t] into protobuf bytes (a
     [BackendCommandBatch] message). *)
 
-val decode_backend_event_pb : bytes -> regl_recv_msg option
-(** Decode a [BackendEvent] protobuf payload coming from the host. *)
+val decode_backend_event_pb : bytes -> regl_input option
+(** Decode a [BackendEvent] protobuf payload coming from the host. A storage
+    read reply becomes [Event (ValueRead _)]; the others are [REGLRecvMsg]. *)
 
 (** Smart constructors for [BackendCommand]s. *)
 
@@ -132,24 +141,11 @@ val save_value : string -> string -> regl_output
     is fire-and-forget; no success event is emitted. *)
 
 val read_value : string -> regl_output
-(** Read a string value from backend key-value storage. Emits [REGLValueRead] or
-    [REGLValueReadMissing]. *)
+(** Read a string value from backend key-value storage. The reply arrives as a
+    [ValueRead] event. *)
 
 val load_file : string -> regl_output
 (** Load a text file/resource by path. Desktop reads from the filesystem; JS
     uses [fetch]. Emits [REGLFileLoaded] or [REGLFileLoadFailed]. *)
-
-type regl_event =
-  | UpdateTick of float
-  | MouseDown of { button : int; x : float; y : float }
-  | MouseUp of { button : int; x : float; y : float }
-  | MouseMove of { x : float; y : float }
-  | KeyDown of string (* Key Code *)
-  | KeyUp of string (* Key Code *)
-
-type regl_input =
-  | Event of regl_event
-  | REGLRecvMsg of regl_recv_msg
-  | AudioMsg of audio_recv_msg
 
 val decode_event_pb : bytes -> regl_event option

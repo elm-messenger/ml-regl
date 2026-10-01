@@ -60,7 +60,7 @@ module Make (H : Host) = struct
       recv_regl_cmd_pb =
         (fun payload ->
           match Regl_proto.decode_backend_event_pb payload with
-          | Some msg -> drive (Regl_proto.REGLRecvMsg msg)
+          | Some input -> drive input
           | None -> ());
       recv_audio_msg_pb =
         (fun payload ->
