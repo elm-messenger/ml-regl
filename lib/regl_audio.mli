@@ -49,6 +49,12 @@ val offset_by : float -> audio -> audio
 val length : source -> float
 (** Duration of a loaded source, in seconds. *)
 
+val ends_at : audio -> float option
+(** When every voice in the description has finished playing, in absolute
+    milliseconds (the [Tick] scale), accounting for [offset_by], [start_at], and
+    playback rate. [None] if a voice loops or never ends (a playback rate of
+    zero or less). [silence] has already ended ([Some neg_infinity]). *)
+
 (** {1 Internal — used by [Regl.create_app]} *)
 
 type prev_state

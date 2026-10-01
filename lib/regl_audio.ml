@@ -81,6 +81,20 @@ let rec flatten = function
 (* effective absolute start time after [offset_by] is applied *)
 let abs_start_time f = f.start_time +. f.offset
 
+let ends_at audio =
+  List.fold_left
+    (fun acc f ->
+      match acc with
+      | None -> None
+      | Some _ when Option.is_some f.loop || f.playback_rate <= 0.0 -> None
+      | Some t ->
+          let remaining =
+            Float.max 0.0 ((f.source.duration *. 1000.0) -. f.start_at)
+          in
+          Some
+            (Float.max t (abs_start_time f +. (remaining /. f.playback_rate))))
+    (Some neg_infinity) (flatten audio)
+
 (* volume timelines shifted by the same offset *)
 let shifted_volume_timelines f =
   List.map

@@ -35,6 +35,15 @@
  (flags
   (:standard -warn-error -A)))
 
+; --- test_audio_ends: when an audio description finishes -------------
+
+(test
+ (name test_audio_ends)
+ (modules test_audio_ends)
+ (libraries ml_regl_core)
+ (flags
+  (:standard -warn-error -A)))
+
 ; --- test_ml_regl: full-coverage demo of the public API ----------------
 
 (executable
