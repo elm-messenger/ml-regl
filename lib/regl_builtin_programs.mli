@@ -67,8 +67,16 @@ val texture_cropped :
   float * float ->
   string ->
   renderable
+(** [texture_cropped p1 p2 p3 p4 uv1 uv2 uv3 uv4 name] draws a quad with corners
+    [p1]..[p4] (clockwise from the top-left) and a texture coordinate for each:
+    (0, 0) is the texture's bottom-left, (1, 1) its top-right. *)
 
 val rect_texture : float * float -> float * float -> string -> renderable
+
+(** [rect_texture_cropped], [centered_texture_cropped] and their [_with_alpha]
+    variants draw part of a texture: after the position and size come the part's
+    top-left corner and size as fractions (0 to 1) of the texture, measured from
+    its top-left corner. *)
 
 val rect_texture_cropped :
   float * float ->

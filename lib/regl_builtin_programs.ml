@@ -163,7 +163,7 @@ let centered_texture_cropped (x, y) (w, h) angle (cx, cy) (cw, ch) name =
       str "texture" name;
       nums "posize" [ x; y; w; h ];
       num "angle" angle;
-      nums "texc" [ cx; cy; cw; ch ];
+      nums "texc" [ cx; 1.0 -. cy -. ch; cw; ch ];
     ]
 
 (* Functions with alpha *)
@@ -225,7 +225,7 @@ let centered_texture_cropped_with_alpha (x, y) (w, h) angle (cx, cy) (cw, ch)
       str "texture" name;
       nums "posize" [ x; y; w; h ];
       num "angle" angle;
-      nums "texc" [ cx; cy; cw; ch ];
+      nums "texc" [ cx; 1.0 -. cy -. ch; cw; ch ];
       num "alpha" alpha;
     ]
 
