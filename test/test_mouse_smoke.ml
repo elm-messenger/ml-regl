@@ -92,7 +92,7 @@ let init () : model * regl_output list =
           virt_height = virt_h;
           fbo_num = 2;
           builtin_programs = None;
-          window = { fullscreen = None; resizable = Some true };
+          window = { default_window_config with resizable = Some true };
           app_name = None;
         };
       config_regl (ConfigTimeInterval AnimationFrame);
