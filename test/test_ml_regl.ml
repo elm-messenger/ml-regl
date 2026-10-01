@@ -372,6 +372,7 @@ let init () =
   let texture_opts =
     Some
       {
+        default_texture_options with
         mag = Some MagNearest;
         min = Some MinLinear;
         crop = Some ((0, 0), (32, 32));

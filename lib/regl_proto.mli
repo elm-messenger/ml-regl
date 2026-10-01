@@ -41,7 +41,15 @@ type texture_options = {
   mag : texture_mag_option option;
   min : texture_min_option option;
   crop : ((int * int) * (int * int)) option;
+      (** [((x, y), (width, height))] in pixels from the image's top-left
+          corner: load only that part of the image. *)
+  flip_y : bool;
+      (** Mirror the texture vertically. With [false] it shows the image as it
+          is in the file, on every host; a crop is cut first, then flipped. *)
 }
+
+val default_texture_options : texture_options
+(** No crop, no flip, the hosts' default filters. *)
 
 type regl_start_config = {
   virt_width : float;

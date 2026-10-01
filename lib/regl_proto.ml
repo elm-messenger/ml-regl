@@ -35,7 +35,11 @@ type texture_options = {
   mag : texture_mag_option option;
   min : texture_min_option option;
   crop : ((int * int) * (int * int)) option;
+  flip_y : bool;
 }
+
+let default_texture_options =
+  { mag = None; min = None; crop = None; flip_y = false }
 
 type regl_start_config = {
   virt_width : float;
@@ -105,7 +109,7 @@ let backend_min = function
 
 let backend_texture_options = function
   | None -> None
-  | Some { mag; min; crop } ->
+  | Some { mag; min; crop; flip_y } ->
       let mag =
         match mag with
         | None -> Backend_pb.TextureMagOption.TEXTURE_MAG_OPTION_LINEAR
@@ -122,7 +126,7 @@ let backend_texture_options = function
         | Some ((x, y), (w, h)) ->
             Some (Backend_pb.TextureCrop.make ~x ~y ~width:w ~height:h ())
       in
-      Some (Backend_pb.TextureOptions.make ~mag ~min ?crop ())
+      Some (Backend_pb.TextureOptions.make ~mag ~min ?crop ~flip_y ())
 
 let backend_shader_language = function
   | Glsl -> Backend_pb.ShaderLanguage.SHADER_LANGUAGE_GLSL
