@@ -416,3 +416,30 @@
  (deps test_texture_parity.ml)
  (action
   (copy %{deps} %{target})))
+
+; --- test_control_frames: a different clear colour every frame ---------
+; For control-protocol checks (test/native_control_smoke.py): a screenshot
+; shows which frame it holds.
+
+(executable
+ (name test_control_frames)
+ (modules test_control_frames)
+ (libraries js_of_ocaml ml_regl_js)
+ (modes js)
+ (flags
+  (:standard -warn-error -A)))
+
+(executable
+ (name test_control_frames_desktop)
+ (modules test_control_frames_desktop)
+ (libraries ml_regl_desktop)
+ (modes
+  (native exe))
+ (flags
+  (:standard -warn-error -A)))
+
+(rule
+ (target test_control_frames_desktop.ml)
+ (deps test_control_frames.ml)
+ (action
+  (copy %{deps} %{target})))
