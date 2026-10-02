@@ -27,7 +27,8 @@ Hello:
   "protocol": 1,
   "runtime": "ml-regl-desktop",
   "capabilities": ["pause", "resume", "quit", "step", "set_time",
-                   "get_state", "get_render_tree", "screenshot", "input"]
+                   "get_state", "get_render_tree", "screenshot", "screenshot_view",
+                   "input"]
 }
 ```
 
@@ -59,8 +60,25 @@ terminate the game.
 - get_state returns the latest publish_state payload, recent logs, frame number,
   clock, and pause status.
 - get_render_tree returns the latest render tree as JSON.
-- screenshot captures the current desktop back buffer as a BMP path or the
-  browser canvas as a PNG data URL.
+- screenshot captures the current frame: the desktop back buffer as a file
+  (path) or the browser canvas as a data URL (data_url). Optional params, for
+  hosts that list the screenshot_view capability:
+  - area: "window" (default; the whole desktop window, letterbox included)
+    or "view" (only the virtual area).
+  - region: {x, y, width, height} in virtual units, a part of the view.
+  - scale: "native" (default; captured pixels) or "virtual" (one pixel per
+    virtual unit, never scaled up).
+  - max_width: largest output width in pixels; the aspect ratio is kept.
+  - format: "bmp" (desktop default), "png" (browser default) or "jpeg"; the
+    browser writes PNG for "bmp".
+  - quality: JPEG quality from 1 to 100 (default 90).
+  - path (desktop): where to write the file; default mcp_frame_N.<ext> in
+    the game's working directory.
+
+  The result also gives format, width and height of the image, view (the
+  virtual area in window or canvas pixels), virtual (the virtual size), and
+  pixels_per_unit (image pixels per virtual unit). Images are opaque, as the
+  window shows them.
 - input injects a key_down, key_up, mouse_down, mouse_up, or mouse_move event.
   Key codes use the SDL naming convention and mouse buttons are one-based.
 
