@@ -39,7 +39,11 @@ object:
 ```
 
 Every command is applied on the game/render thread at a frame boundary and
-receives a response:
+receives a response. The browser host applies commands as they arrive,
+between frames, and runs stepped frames without waiting for animation
+frames, so a game in a background tab can still be paused, stepped and
+captured; only its own unpaused frames follow the tab's animation frames,
+which a background tab gets rarely or not at all.
 
 ```json
 {"type":"response","id":"next","ok":true,"result":{"queued":1}}
@@ -59,19 +63,23 @@ terminate the game.
 - get_state returns the latest publish_state payload, recent logs, frame number,
   clock, and pause status.
 - get_render_tree returns the latest render tree as JSON.
-- screenshot captures the current frame: the desktop back buffer as a file
-  (path) or the browser canvas as a data URL (data_url). Optional params:
+- screenshot captures the latest frame, drawn again so that a paused game
+  is captured as it was last drawn: the desktop window as a file (path) or
+  the browser canvas as a data URL (data_url). Optional params:
   - area: "window" (default; the whole desktop window, letterbox included)
     or "view" (only the virtual area).
   - region: {x, y, width, height} in virtual units, a part of the view.
   - scale: "native" (default; captured pixels) or "virtual" (one pixel per
-    virtual unit, never scaled up).
+    virtual unit, scaled up or down, so a view capture has the virtual size
+    even when the window is a pixel off it).
   - max_width: largest output width in pixels; the aspect ratio is kept.
   - format: "bmp" (desktop default), "png" (browser default) or "jpeg"; the
     browser writes PNG for "bmp".
   - quality: JPEG quality from 1 to 100 (default 90).
-  - path (desktop): where to write the file; default mcp_frame_N.<ext> in
-    the game's working directory.
+  - path (desktop): where to write the file; default mcp_frame_N.<ext>. A
+    relative path is relative to the game's working directory, and missing
+    directories are created. The result's path is absolute; an error names
+    the path and the reason.
 
   The result also gives format, width and height of the image, view (the
   virtual area in window or canvas pixels), virtual (the virtual size), and
@@ -89,6 +97,10 @@ The host may send asynchronous events at any time after hello:
 {"type":"state","state":{"scene":"intro","frame":12}}
 {"type":"frame","frame":12,"time_ms":200.0}
 ```
+
+A frame event follows every frame. Its frame is the number of frames run so
+far, the count get_state gives, and time_ms the clock after the frame: a step
+of n frames from get_state's frame F ends with the frame event for F + n.
 
 printf remains a human-readable stdout diagnostic. Regl_debug.log and
 Regl_debug.publish_state are opt-in and use the same event stream; protobuf
