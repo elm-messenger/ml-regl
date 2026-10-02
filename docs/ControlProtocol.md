@@ -52,7 +52,8 @@ terminate the game.
 
 - pause, resume, and quit control lifecycle.
 - step pauses the game and advances a requested number of frames. dt_ms selects
-  the deterministic clock increment; stepping starts at time zero unless
+  the deterministic clock increment. The first step switches the game to the
+  deterministic clock, which continues from the game's current time unless
   set_time was used.
 - set_time sets the deterministic clock in milliseconds.
 - get_state returns the latest publish_state payload, recent logs, frame number,
