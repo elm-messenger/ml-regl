@@ -47,6 +47,13 @@
 ; --- test_audio_ends: when an audio description finishes -------------
 
 (test
+ (name test_text_measure)
+ (modules test_text_measure)
+ (libraries ml_regl_core)
+ (flags
+  (:standard -warn-error -A)))
+
+(test
  (name test_audio_ends)
  (modules test_audio_ends)
  (libraries ml_regl_core)
