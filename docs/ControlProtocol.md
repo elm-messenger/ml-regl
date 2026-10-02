@@ -27,8 +27,7 @@ Hello:
   "protocol": 1,
   "runtime": "ml-regl-desktop",
   "capabilities": ["pause", "resume", "quit", "step", "set_time",
-                   "get_state", "get_render_tree", "screenshot", "screenshot_view",
-                   "input"]
+                   "get_state", "get_render_tree", "screenshot", "input"]
 }
 ```
 
@@ -61,8 +60,7 @@ terminate the game.
   clock, and pause status.
 - get_render_tree returns the latest render tree as JSON.
 - screenshot captures the current frame: the desktop back buffer as a file
-  (path) or the browser canvas as a data URL (data_url). Optional params, for
-  hosts that list the screenshot_view capability:
+  (path) or the browser canvas as a data URL (data_url). Optional params:
   - area: "window" (default; the whole desktop window, letterbox included)
     or "view" (only the virtual area).
   - region: {x, y, width, height} in virtual units, a part of the view.
