@@ -4,7 +4,8 @@
    8), 128x128). The picture must be the same on both hosts, and each slot must
    show the cells listed in [probes]; test/check_texture_parity.py checks both.
    Fonts are drawn too (the labels) and must stay upright. The last slots check
-   that a compositor treats an empty side as a transparent image.
+   that a compositor treats an empty side as a transparent image, and the text
+   rows below them that Regl_text measures what the hosts draw.
 
    Browser: dune build test/test_texture_parity.bc.js, serve the repository
    root, open html/test_texture_parity.html. Desktop: dune build
@@ -14,7 +15,7 @@ open Ml_regl_core
 open Regl_proto
 module P = Regl_builtin_programs
 
-type model = { ready : string list }
+type model = { ready : string list; metrics : Regl_text.metrics option }
 
 let slot i = (float_of_int (i mod 8 * 160), float_of_int (i / 8 * 180))
 
@@ -98,7 +99,7 @@ let nearest = { default_texture_options with mag = Some MagNearest }
 let cut = { nearest with crop = Some ((32, 0), (32, 32)) }
 
 let init () =
-  ( { ready = [] },
+  ( { ready = []; metrics = None },
     [
       start_regl
         {
@@ -111,6 +112,7 @@ let init () =
         };
       config_regl (ConfigTimeInterval AnimationFrame);
       load_font "consolas" "assets/Consolas.png" "assets/Consolas.json";
+      load_file "assets/Consolas.json";
       load_texture "full" "assets/orientation.png" (Some nearest);
       load_texture "flipped" "assets/orientation.png"
         (Some { nearest with flip_y = true });
@@ -125,10 +127,25 @@ let init () =
 
 let update m = function
   | REGLRecvMsg (REGLTextureLoaded t) ->
-      ({ ready = t.name :: m.ready }, Regl_audio.silence, [])
+      ({ m with ready = t.name :: m.ready }, Regl_audio.silence, [])
   | REGLRecvMsg (REGLFontLoaded name | REGLProgramCreated name) ->
-      ({ ready = name :: m.ready }, Regl_audio.silence, [])
+      ({ m with ready = name :: m.ready }, Regl_audio.silence, [])
+  | REGLRecvMsg (REGLFileLoaded { data; _ }) ->
+      ( { m with metrics = Result.to_option (Regl_text.parse_bmfont data) },
+        Regl_audio.silence,
+        [] )
   | _ -> (m, Regl_audio.silence, [])
+
+(* Text rows below the slots: each is drawn left-aligned at x = 16, then
+   right-aligned at x = 16 + its Regl_text width, so both copies' ink must line
+   up; Consolas has fractional metrics. Rows are 70 apart from y = 560. *)
+let text_rows =
+  [
+    ( "Kerning AV Wavy 12.5",
+      { P.default_textbox_option with letter_spacing = Some 1.5 } );
+    ( "tabs\tand  spaces",
+      { P.default_textbox_option with word_spacing = Some 1.5 } );
+  ]
 
 (* Each probe draws into the 128x128 square at [(x, y)]. *)
 let probes :
@@ -247,22 +264,52 @@ let probes :
     );
   ]
 
+let text_view m =
+  match m.metrics with
+  | Some metrics when List.mem "consolas" m.ready ->
+      List.concat
+        (List.mapi
+           (fun i (text, opt) ->
+             let opt =
+               {
+                 opt with
+                 P.fonts = [ "consolas" ];
+                 text;
+                 size = 24.;
+                 color = Color.white;
+               }
+             in
+             let w =
+               match Regl_text.measure_textbox (fun _ -> Some metrics) opt with
+               | Some r -> r.width
+               | None -> 0.
+             in
+             let y = 560. +. (float_of_int i *. 70.) in
+             [
+               P.textbox_pro (16., y) { opt with align = Some "left" };
+               P.textbox_pro
+                 (16. +. w, y +. 30.)
+                 { opt with align = Some "right" };
+             ])
+           text_rows)
+  | _ -> []
+
 let view m =
   let ready names = List.for_all (fun n -> List.mem n m.ready) names in
   Regl_common.group []
-    (P.clear (Color.rgb 0.5 0.5 0.5)
-    :: List.concat
-         (List.mapi
-            (fun i (label, needs, draw) ->
-              let x, y = slot i in
-              [
-                (if ready needs then draw (x +. 16., y +. 8.) else P.empty);
-                (if ready [ "consolas" ] then
-                   P.textbox
-                     (x +. 16., y +. 142.)
-                     12. label "consolas" Color.white
-                 else P.empty);
-              ])
-            probes))
+    ((P.clear (Color.rgb 0.5 0.5 0.5) :: text_view m)
+    @ List.concat
+        (List.mapi
+           (fun i (label, needs, draw) ->
+             let x, y = slot i in
+             [
+               (if ready needs then draw (x +. 16., y +. 8.) else P.empty);
+               (if ready [ "consolas" ] then
+                  P.textbox
+                    (x +. 16., y +. 142.)
+                    12. label "consolas" Color.white
+                else P.empty);
+             ])
+           probes))
 
 let () = Regl_backend.create_app init update view

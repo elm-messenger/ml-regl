@@ -6,8 +6,10 @@ test/assets/orientation.png (4x4 cells, 16 colours). This script captures the
 desktop window (over the control protocol) and the browser page (headless
 Chrome), samples the centre of every drawn cell, and checks it against the
 cell the slot must show. It also compares the label text of both hosts, so a
-flipped font atlas fails too, and checks that a compositor with one empty
-side treats it as a transparent image.
+flipped font atlas fails too, checks that a compositor with one empty side
+treats it as a transparent image, and checks the text rows: each is drawn
+left-aligned and right-aligned at its Regl_text width, so both copies' ink
+must line up, on both hosts alike.
 
 Build first: ./build.sh (desktop executable and test bundles) and the
 ml-regl-js bundle (`make build` in ml-regl-js). Needs Python's `websockets`
@@ -75,6 +77,9 @@ PROBES = [
 BACKGROUND_ONLY = {"compositor, empty 1st"}
 HALF_FADED = {"fade, empty side"}
 TOLERANCE = 40
+# Text rows (see [text_rows] in test_texture_parity.ml): the y of the
+# left-aligned copy; the right-aligned copy is 30 below.
+TEXT_ROWS = [("letter spacing", 560), ("tabs and word spacing", 630)]
 
 
 def samples():
@@ -115,6 +120,15 @@ class Canvas:
         px = self.left + x * (self.right - self.left) / VIRTUAL[0]
         py = self.top + y * (self.bottom - self.top) / VIRTUAL[1]
         return self.image.getpixel((int(px), int(py)))
+
+    def ink_columns(self, y0: float, y1: float):
+        """Leftmost and rightmost virtual x with text ink in [y0, y1)."""
+        xs = []
+        for vy in range(int(y0), int(y1)):
+            for vx in range(VIRTUAL[0]):
+                if sum(self.at(vx, vy)) > 600:
+                    xs.append(vx)
+        return (min(xs), max(xs)) if xs else None
 
     def labels(self, index: int) -> Image.Image:
         """The slot's label strip, scaled to virtual size, in grey."""
@@ -209,6 +223,20 @@ def main() -> int:
                 got = canvas.at(x, y)
                 if max(abs(a - b) for a, b in zip(got, expected)) > TOLERANCE:
                     failures.append(f"{host}: {label} at ({x:.0f}, {y:.0f}): expected {expected}, got {got}")
+        extents = {}
+        for name, y in TEXT_ROWS:
+            for host, canvas in hosts.items():
+                left = canvas.ink_columns(y, y + 28)
+                right = canvas.ink_columns(y + 30, y + 58)
+                if not left or not right:
+                    failures.append(f"{host}: text row '{name}' has no ink")
+                    continue
+                if max(abs(a - b) for a, b in zip(left, right)) > 1:
+                    failures.append(f"{host}: text row '{name}': left-aligned ink {left}, right-aligned at the measured width {right}")
+                extents.setdefault(name, {})[host] = left
+            got = extents.get(name, {})
+            if len(got) == 2 and max(abs(a - b) for a, b in zip(got["desktop"], got["browser"])) > 1:
+                failures.append(f"text row '{name}' differs between hosts: {got}")
         for index, (label, _) in enumerate(PROBES):
             a, b = hosts["desktop"].labels(index), hosts["browser"].labels(index)
             diff = sum(abs(p - q) for p, q in zip(a.tobytes(), b.tobytes())) / (140 * 16)
